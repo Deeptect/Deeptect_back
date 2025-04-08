@@ -26,5 +26,4 @@ public class WebConfig implements WebMvcConfigurer {
             .exposedHeaders("Authorization")
             .allowCredentials(true); // 인증 정보 포함 허용
     }
-
 }
