@@ -1,15 +1,19 @@
 package com.deeptactback.deeptact_back.controller;
 
-import com.deeptactback.deeptact_back.common.CMResponse;
-import com.deeptactback.deeptact_back.dto.VideoReqDto;
 import com.deeptactback.deeptact_back.service.VideoService;
+import com.deeptactback.deeptact_back.service.YoutubeShortsFetchService;
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.web.bind.annotation.ModelAttribute;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.core.io.InputStreamResource;
+import org.springframework.core.io.Resource;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 @Slf4j
@@ -19,26 +23,34 @@ import org.springframework.web.multipart.MultipartFile;
 public class VideoController {
 
     private final VideoService videoService;
+    private final YoutubeShortsFetchService youtubeShortsFetchService;
 
-    @PostMapping("/upload")
-    public String uploadFile(@ModelAttribute VideoReqDto videoReqDto, @RequestParam("file") MultipartFile file) {
-        log.info("파일 업로드 요청 수신: {}", file.getOriginalFilename());
 
-        // 파일이 비어있지 않은지 확인
-        if (file.isEmpty()) {
-            log.error("업로드할 파일이 없습니다.");
-            return "redirect:/files/upload?error=파일이 비어있습니다."; // 오류 메시지 전달
-        }
-
-        // 파일 업로드 서비스 호출
-        try {
-            CMResponse response = videoService.uploadVideo(file);
-            log.info("파일 업로드 성공: {}", response);
-            return "redirect:/files"; // 성공 시 파일 목록 페이지로 리다이렉트
-        } catch (Exception e) {
-            log.error("파일 업로드 실패: {}", e.getMessage());
-            return "redirect:/files/upload?error=" + e.getMessage(); // 오류 발생 시 업로드 페이지로 리다이렉트
-        }
+    @PostMapping(path = "/upload", consumes = {MediaType.MULTIPART_FORM_DATA_VALUE})
+    public ResponseEntity<String> uploadFile(@RequestParam("video") MultipartFile video) throws IOException {
+        String fileName = videoService.uploadVideo(video.getOriginalFilename(), video);
+        return ResponseEntity.ok("파일이 Cloudflare R2에 업로드 되었습니다: " + fileName);
     }
 
+    @GetMapping("/download/{fileName}")
+    public ResponseEntity<Resource> downloadFile(@PathVariable String fileName) throws IOException {
+        InputStream inputStream = videoService.downloadVideo(fileName);
+        InputStreamResource resource = new InputStreamResource(inputStream);
+
+        return ResponseEntity.ok()
+            .contentType(MediaType.APPLICATION_OCTET_STREAM)
+            .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + fileName + "\"")
+            .body(resource);
+    }
+
+    @GetMapping("/fetch-shorts")
+    public ResponseEntity<List<String>> fetchShorts() {
+        try {
+            List<String> fileNames = youtubeShortsFetchService.fetchAndStoreYoutubeShorts();
+            return ResponseEntity.ok(fileNames);
+        } catch (Exception e) {
+            log.error("YouTube 쇼츠 가져오기 실패", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
 }
