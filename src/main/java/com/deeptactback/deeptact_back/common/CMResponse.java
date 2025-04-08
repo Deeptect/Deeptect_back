@@ -25,22 +25,22 @@ public class CMResponse<T> {
     }
 
     // 성공 : 메시지 + 데이터 (반환값 O)
-    public static <T> CMResponse<T> success(int code,BaseResponseStatus status, T data) {
-        return new CMResponse<>(code,status.getMessage(), data);
+    public static <T> CMResponse<T> success(BaseResponseStatus status, T data) {
+        return new CMResponse<>(status.getCode(), status.getMessage(), data);
     }
 
     // 성공 : 메시지 + 데이터 (반환값 X)
-    public static <T> CMResponse<T> success(int code, BaseResponseStatus status) {
-        return new CMResponse<>(code, status.getMessage(), null);
+    public static <T> CMResponse<T> success(BaseResponseStatus status) {
+        return new CMResponse<>(status.getCode(), status.getMessage(), null);
     }
 
     // 실패 : 코드 + 메시지 (반환값 O)
-    public static <T> CMResponse<T> fail(int code,BaseResponseStatus status, T data) {
-        return new CMResponse<>(code, status.getMessage(), data);
+    public static <T> CMResponse<T> fail(BaseResponseStatus status, T data) {
+        return new CMResponse<>(status.getCode(), status.getMessage(), data);
     }
 
-    // 실패 : 코드 +  + 메시지 (반환값 X)
-    public static <T> CMResponse<T> fail(int code, BaseResponseStatus status) {
-        return new CMResponse<>(code, status.getMessage(), null);
+    // 실패 : 코드 + 메시지 (반환값 X)
+    public static <T> CMResponse<T> fail(BaseResponseStatus status) {
+        return new CMResponse<>(status.getCode(), status.getMessage(), null);
     }
 }

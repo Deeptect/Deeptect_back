@@ -34,10 +34,12 @@ public enum BaseResponseStatus {
     REGISTRATION_FAILED(HttpStatus.BAD_REQUEST, false, 2501, "회원가입에 실패했습니다. 중복된 아이디일 수 있습니다."),
 
     // 비밀번호 형식 불일치
-    PASSWORD_FORMAT_INVALID(HttpStatus.BAD_REQUEST, false, 2601, "비밀번호 형식이 불일치합니다. 최소 8자 이상 최대 20자 이하, 영문, 숫자, 특수문자를 포함해야 합니다."),
+    PASSWORD_FORMAT_INVALID(HttpStatus.BAD_REQUEST, false, 2601,
+        "비밀번호 형식이 불일치합니다. 최소 8자 이상 최대 20자 이하, 영문, 숫자, 특수문자를 포함해야 합니다."),
     UNMATCHED_PASSWORD(HttpStatus.FORBIDDEN, false, 2602, "비밀번호가 일치하지 않습니다."),
     INVALID_CURRENT_PASSWORD(HttpStatus.FORBIDDEN, false, 2603, "현재 비밀번호가 일치하지 않습니다."),
     PASSWORD_CHANGE_SUCCESS(HttpStatus.OK, true, 2604, "비밀번호가 변경되었습니다."),
+    FAIL_PASSWORD_RESET(HttpStatus.BAD_REQUEST, true, 2605, "비밀번호가 변경 실패."),
 
     // 인증코드 불일치
     UNMATCHED_EMAIL_CODE(HttpStatus.FORBIDDEN, false, 2610, "인증코드가 일치하지 않습니다."),
@@ -50,6 +52,9 @@ public enum BaseResponseStatus {
 
     NOT_EMAIL_VERIFY(HttpStatus.FORBIDDEN, false, 2700, "이메일 인증이 되지 않은 계정입니다."),
 
+    FAIL_CREATE_OAUTH_URL(HttpStatus.INTERNAL_SERVER_ERROR, false, 2800, "카카오 URL 생성에 실패했습니다."),
+    FAIL_RETURN_OAUTH_TOKEN(HttpStatus.INTERNAL_SERVER_ERROR, false, 2801, "카카오 토큰 반환에 실패했습니다."),
+    FAIL_RETURN_OAUTH_INFO(HttpStatus.INTERNAL_SERVER_ERROR, false, 2802, "카카오 정보 요청 중 오류가 발생했습니다."),
 
     /**
      * 400 : security 에러
@@ -63,6 +68,7 @@ public enum BaseResponseStatus {
     INVALID_PASSWORD(HttpStatus.FORBIDDEN, false, 403, "비밀번호가 올바르지 않습니다."),
     NOT_APPROVAL_MEMBER(HttpStatus.UNAUTHORIZED, false, 403, "관리자에게 인가되지 않은 계정입니다."),
     NOT_FOUND_DATA(HttpStatus.NOT_FOUND, false, 404, "해당 프로젝트 홍보 게시물을 찾을 수 없음"),
+    INVALID_CODE(HttpStatus.BAD_REQUEST, false, 400, "잘못된 인증 코드입니다."),
 
     /**
      * 500 : security 에러
@@ -114,7 +120,10 @@ public enum BaseResponseStatus {
     NO_EXIST_SNS_MEMBERS(HttpStatus.NOT_FOUND, false, 2106, "가입되지 않은 SNS 멤버 정보입니다."),
 
     // Address
-    NO_EXIST_ADDRESS(HttpStatus.NOT_FOUND, false, 2300, "존재하지 않는 주소입니다.");
+    NO_EXIST_ADDRESS(HttpStatus.NOT_FOUND, false, 2300, "존재하지 않는 주소입니다."),
+
+    // Oauth
+    INVALID_PROVIDER(HttpStatus.BAD_REQUEST, false, 2400, "존재하지 않는 제공자입니다.");
 
 
     private final HttpStatusCode httpStatusCode;
