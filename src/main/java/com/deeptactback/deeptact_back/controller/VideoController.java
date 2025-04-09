@@ -1,16 +1,19 @@
 package com.deeptactback.deeptact_back.controller;
 
-import com.deeptactback.deeptact_back.service.VideoService;
+import com.deeptactback.deeptact_back.common.BaseException;
+import com.deeptactback.deeptact_back.common.BaseResponseStatus;
+import com.deeptactback.deeptact_back.common.CMResponse;
+import com.deeptactback.deeptact_back.service.CloudflareR2Service;
 import com.deeptactback.deeptact_back.service.YoutubeShortsFetchService;
 import java.io.IOException;
 import java.io.InputStream;
+import java.security.GeneralSecurityException;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.io.InputStreamResource;
 import org.springframework.core.io.Resource;
 import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -22,19 +25,26 @@ import org.springframework.web.multipart.MultipartFile;
 @RequestMapping("/api/v1/video")
 public class VideoController {
 
-    private final VideoService videoService;
+    private final CloudflareR2Service cloudflareR2Service;
     private final YoutubeShortsFetchService youtubeShortsFetchService;
 
-
+    // cloudflare 업로드
     @PostMapping(path = "/upload", consumes = {MediaType.MULTIPART_FORM_DATA_VALUE})
-    public ResponseEntity<String> uploadFile(@RequestParam("video") MultipartFile video) throws IOException {
-        String fileName = videoService.uploadVideo(video.getOriginalFilename(), video);
-        return ResponseEntity.ok("파일이 Cloudflare R2에 업로드 되었습니다: " + fileName);
+    public CMResponse<String> uploadFile(@RequestParam("video") MultipartFile video){
+        try {
+            String fileName = cloudflareR2Service.uploadVideo(video.getOriginalFilename(), video);
+            return CMResponse.success(BaseResponseStatus.SUCCESS, fileName);
+        } catch (BaseException e) {
+            return CMResponse.fail(e.getErrorCode());
+        }
+        catch (IOException e) {
+            return CMResponse.fail(BaseResponseStatus.INTERNAL_SERVER_ERROR);
+        }
     }
 
     @GetMapping("/download/{fileName}")
     public ResponseEntity<Resource> downloadFile(@PathVariable String fileName) throws IOException {
-        InputStream inputStream = videoService.downloadVideo(fileName);
+        InputStream inputStream = cloudflareR2Service.downloadVideo(fileName);
         InputStreamResource resource = new InputStreamResource(inputStream);
 
         return ResponseEntity.ok()
@@ -43,14 +53,17 @@ public class VideoController {
             .body(resource);
     }
 
+    // YT 쇼츠 fetch
     @GetMapping("/fetch-shorts")
-    public ResponseEntity<List<String>> fetchShorts() {
+    public CMResponse<List<String>> fetchShorts(){
         try {
             List<String> fileNames = youtubeShortsFetchService.fetchAndStoreYoutubeShorts();
-            return ResponseEntity.ok(fileNames);
-        } catch (Exception e) {
-            log.error("YouTube 쇼츠 가져오기 실패", e);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+            return CMResponse.success(BaseResponseStatus.SUCCESS, fileNames);
+        } catch (BaseException e) {
+            return CMResponse.fail(e.getErrorCode());
+        }
+        catch (IOException | GeneralSecurityException e) {
+            return CMResponse.fail(BaseResponseStatus.INTERNAL_SERVER_ERROR);
         }
     }
 }
