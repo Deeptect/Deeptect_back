@@ -22,12 +22,12 @@ import software.amazon.awssdk.services.s3.model.S3Exception;
 
 @Service
 @Slf4j
-public class CloudflareR2VideoServiceImpl implements VideoService {
+public class CloudflareR2ServiceImpl implements CloudflareR2Service {
 
     private final S3Client r2Client;
     private final String bucketName;
 
-    public CloudflareR2VideoServiceImpl(
+    public CloudflareR2ServiceImpl(
         @Value("${cloudflare.r2.access-key-id}") String accessKeyId,
         @Value("${cloudflare.r2.secret-access-key}") String secretAccessKey,
         @Value("${cloudflare.r2.endpoint}") String endpoint,

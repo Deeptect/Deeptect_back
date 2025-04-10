@@ -25,7 +25,7 @@ import org.springframework.stereotype.Service;
 @RequiredArgsConstructor
 public class YoutubeShortsFetchServiceImpl implements YoutubeShortsFetchService {
 
-    private final VideoService videoService;
+    private final CloudflareR2Service cloudflareR2Service;
 
     @Value("${youtube.api.key}")
     private String apiKey;
@@ -48,7 +48,7 @@ public class YoutubeShortsFetchServiceImpl implements YoutubeShortsFetchService 
                     storedFileNames.add(fileName);
                 }
             } catch (Exception e) {
-                log.error("YouTube 쇼츠 스트리밍 실패: {} - {}", videoId, title, e);
+                log.error("YouTube 쇼츠 fetch 실패: {} - {}", videoId, title, e);
             }
         }
 
@@ -73,7 +73,6 @@ public class YoutubeShortsFetchServiceImpl implements YoutubeShortsFetchService 
     }
 
     public String streamVideoDirectlyToR2(String videoId, String title) throws IOException, InterruptedException {
-        // 파일명 생성
         String timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMddHHmmss"));
         String safeTitle = title.replaceAll("[^a-zA-Z0-9가-힣]", "_");
         if (safeTitle.length() > 30) {
@@ -102,9 +101,9 @@ public class YoutubeShortsFetchServiceImpl implements YoutubeShortsFetchService 
             }
 
             // byte 기반 영상 업로드
-            videoService.uploadVideoBytes(fileName, videoBytes, "video/mp4");
+            cloudflareR2Service.uploadVideoBytes(fileName, videoBytes, "video/mp4");
 
-            log.info("YouTube 쇼츠 스트리밍 및 업로드 완료: {}", fileName);
+            log.info("YouTube 쇼츠 업로드 완료: {}", fileName);
             return fileName;
         }
     }
