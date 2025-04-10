@@ -3,6 +3,7 @@ package com.deeptactback.deeptact_back.controller;
 import com.deeptactback.deeptact_back.common.BaseException;
 import com.deeptactback.deeptact_back.common.BaseResponseStatus;
 import com.deeptactback.deeptact_back.common.CMResponse;
+import com.deeptactback.deeptact_back.dto.VideoUploadRequestDto;
 import com.deeptactback.deeptact_back.service.CloudflareR2Service;
 import com.deeptactback.deeptact_back.service.YoutubeShortsFetchService;
 import java.io.IOException;
@@ -30,9 +31,9 @@ public class VideoController {
 
     // cloudflare 업로드
     @PostMapping(path = "/upload", consumes = {MediaType.MULTIPART_FORM_DATA_VALUE})
-    public CMResponse<String> uploadFile(@RequestParam("video") MultipartFile video){
+    public CMResponse<String> uploadFile(@RequestParam("video") MultipartFile video, @RequestBody VideoUploadRequestDto videoUploadRequestDto){
         try {
-            String fileName = cloudflareR2Service.uploadVideo(video.getOriginalFilename(), video);
+            String fileName = cloudflareR2Service.uploadVideo(video.getOriginalFilename(), video, videoUploadRequestDto);
             return CMResponse.success(BaseResponseStatus.SUCCESS, fileName);
         } catch (BaseException e) {
             return CMResponse.fail(e.getErrorCode());
