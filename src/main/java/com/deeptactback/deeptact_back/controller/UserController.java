@@ -9,7 +9,7 @@ import com.deeptactback.deeptact_back.dto.UserLoginResponseDto;
 import com.deeptactback.deeptact_back.dto.UserRequestDto;
 import com.deeptactback.deeptact_back.service.EmailService;
 import com.deeptactback.deeptact_back.service.UserService;
-import com.deeptactback.deeptact_back.vo.ShowUserResponseVo;
+import com.deeptactback.deeptact_back.vo.UserShowResponseVo;
 import com.deeptactback.deeptact_back.vo.UserLoginResponseVo;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -65,11 +65,11 @@ public class UserController {
     // 입력값 : Token
     // 출력값 : code, message, showUserResponseVo
     @GetMapping("/show")
-    public CMResponse<ShowUserResponseVo> showUser() {
+    public CMResponse<UserShowResponseVo> showUser() {
         try{
             ShowUserResponseDto showUserResponseDto = userService.ShowUser();
-            ShowUserResponseVo showUserResponseVo = ShowUserResponseVo.dtoToVo(showUserResponseDto);
-            return CMResponse.success(BaseResponseStatus.SUCCESS, showUserResponseVo);
+            UserShowResponseVo userShowResponseVo = UserShowResponseVo.dtoToVo(showUserResponseDto);
+            return CMResponse.success(BaseResponseStatus.SUCCESS, userShowResponseVo);
         } catch (BaseException e) {
             return CMResponse.fail(e.getErrorCode());
         }

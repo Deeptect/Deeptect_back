@@ -1,5 +1,8 @@
 package com.deeptactback.deeptact_back.common;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import jakarta.servlet.http.HttpServletResponse;
+import java.io.IOException;
 import lombok.Getter;
 
 @Getter
@@ -11,14 +14,15 @@ public class BaseException extends RuntimeException {
         this.errorCode = errorCode;
     }
 
-    @Getter
-    private BaseResponseStatus status = null;
+    public static void sendErrorResponse(HttpServletResponse response, BaseResponseStatus status) throws IOException {
+        response.setStatus(status.getHttpStatusCode().value());
+        response.setContentType("application/json");
+        response.setCharacterEncoding("UTF-8");
 
-    public int getCode() {
-        return status.getCode(); // 상태 코드 반환
-    }
+        CMResponse<?> errorResponse = CMResponse.fail(status);
+        ObjectMapper objectMapper = new ObjectMapper();
+        String jsonResponse = objectMapper.writeValueAsString(errorResponse);
 
-    public String getMessage() {
-        return status.getMessage(); // 메시지 반환
+        response.getWriter().write(jsonResponse);
     }
 }

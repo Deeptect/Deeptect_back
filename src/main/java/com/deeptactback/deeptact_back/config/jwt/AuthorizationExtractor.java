@@ -7,7 +7,6 @@ import org.springframework.stereotype.Component;
 
 @Component
 public class AuthorizationExtractor {
-    // 토큰 추출 클래스
     public static final String AUTHORIZATION = "Authorization";
     public static final String REFRESH_TOKEN_HEADER = "Refresh";
 
