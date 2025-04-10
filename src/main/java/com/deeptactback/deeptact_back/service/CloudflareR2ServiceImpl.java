@@ -1,5 +1,8 @@
 package com.deeptactback.deeptact_back.service;
 
+import com.deeptactback.deeptact_back.domain.Video;
+import com.deeptactback.deeptact_back.dto.VideoUploadRequestDto;
+import com.deeptactback.deeptact_back.repository.VideoRepository;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
@@ -26,12 +29,14 @@ public class CloudflareR2ServiceImpl implements CloudflareR2Service {
 
     private final S3Client r2Client;
     private final String bucketName;
+    private final VideoRepository videoRepository;
 
     public CloudflareR2ServiceImpl(
         @Value("${cloudflare.r2.access-key-id}") String accessKeyId,
         @Value("${cloudflare.r2.secret-access-key}") String secretAccessKey,
         @Value("${cloudflare.r2.endpoint}") String endpoint,
-        @Value("${cloudflare.r2.bucket-name}") String bucketName) {
+        @Value("${cloudflare.r2.bucket-name}") String bucketName, VideoRepository videoRepository) {
+        this.videoRepository = videoRepository;
 
         this.r2Client = S3Client.builder()
             .region(Region.US_EAST_1)
@@ -44,10 +49,19 @@ public class CloudflareR2ServiceImpl implements CloudflareR2Service {
     }
 
     @Override
-    public String uploadVideo(String originalFilename, MultipartFile file) throws IOException {
+    public String uploadVideo(String originalFilename, MultipartFile file, VideoUploadRequestDto videoUploadRequestDto) throws IOException {
         try {
             String timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMddHHmmss"));
             String fileName = timestamp + "_" + originalFilename;
+
+            Video video = Video.builder()
+                .title(videoUploadRequestDto.getTitle())
+                .category(videoUploadRequestDto.getCategory())
+                .videoImageUrl(videoUploadRequestDto.getVideoImageUrl())
+                .videoUrl(videoUploadRequestDto.getVideoUrl())
+                .build();
+
+            videoRepository.save(video);
 
             PutObjectRequest putObjectRequest = PutObjectRequest.builder()
                 .bucket(bucketName)
