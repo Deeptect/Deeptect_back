@@ -8,6 +8,7 @@ import com.deeptactback.deeptact_back.dto.ChgPasswordRequestDto;
 import com.deeptactback.deeptact_back.dto.ShowUserResponseDto;
 import com.deeptactback.deeptact_back.dto.UserLoginResponseDto;
 import com.deeptactback.deeptact_back.dto.UserRequestDto;
+import com.deeptactback.deeptact_back.dto.UserTokenResponseDto;
 import com.deeptactback.deeptact_back.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -32,12 +33,14 @@ public class UserServiceImpl implements UserService {
     public void RegisterUser(UserRequestDto userRequestDto) {
 
         // 400 : 데이터 누락
-        if (userRequestDto == null || userRequestDto.getPassword() == null || userRequestDto.getEmail() == null || userRequestDto.getConfirmPassword() == null) {
+        if (userRequestDto == null || userRequestDto.getPassword() == null
+            || userRequestDto.getEmail() == null || userRequestDto.getConfirmPassword() == null) {
             throw new BaseException(BaseResponseStatus.WRONG_PARAM);
         }
 
         // 2601 : 비밀번호 형식 불일치
-        if (!(userRequestDto.getPassword()).matches("^(?=.*[a-zA-Z])(?=.*\\d)(?=.*[!@#$%^&*()_+\\-=\\[\\]{};':\"\\\\|,.<>\\/?]).{8,20}$")) {
+        if (!(userRequestDto.getPassword()).matches(
+            "^(?=.*[a-zA-Z])(?=.*\\d)(?=.*[!@#$%^&*()_+\\-=\\[\\]{};':\"\\\\|,.<>\\/?~]).{8,20}$")) {
             throw new BaseException(BaseResponseStatus.PASSWORD_FORMAT_INVALID);
         }
 
@@ -57,10 +60,9 @@ public class UserServiceImpl implements UserService {
             .email(userRequestDto.getEmail())
             .uuid(null)
             .isEmailVerified(false)
-            .role(false)
+            .role("일반")
             .profileImageUrl(null)
             .build();
-
 
         userRepository.save(user);
     }
@@ -70,36 +72,33 @@ public class UserServiceImpl implements UserService {
     public UserLoginResponseDto LoginUser(UserRequestDto userRequestDto) {
 
         // 400 : 데이터 누락
-        if(userRequestDto.getEmail()==null || userRequestDto.getPassword()==null){
+        if (userRequestDto.getEmail() == null || userRequestDto.getPassword() == null) {
             throw new BaseException(BaseResponseStatus.WRONG_PARAM);
         }
 
         // 회원 존재 X 2106
         User user = userRepository.findByEmail(userRequestDto.getEmail());
-        if(user==null || !bCryptPasswordEncoder.matches(userRequestDto.getPassword(), user.getPassword())){
+        if (user == null || !bCryptPasswordEncoder.matches(userRequestDto.getPassword(),
+            user.getPassword())) {
             throw new BaseException(BaseResponseStatus.NO_EXIST_MEMBERS);
         }
         String accessToken = tokenProvider.createAccessToken(user.getUuid());
         String refreshToken = tokenProvider.createRefreshToken(user.getUuid());
 
-        // refreshToken 추가
         User updateUser = User.builder()
             .user_id(user.getUser_id())
             .nickname(user.getNickname())
             .email(user.getEmail())
             .password(user.getPassword())
             .uuid(user.getUuid())
+            .role(user.getRole())
             .refreshToken(refreshToken)
             .build();
 
         userRepository.save(updateUser);
 
-        UserLoginResponseDto userLoginResponseDto = UserLoginResponseDto.builder()
-            .accessToken(accessToken)
-            .refreshToken(refreshToken)
-            .nickname(user.getNickname())
-            .email(user.getEmail())
-            .build();
+        UserLoginResponseDto userLoginResponseDto = UserLoginResponseDto.entityToDto(user,
+            accessToken, refreshToken, "normal");
 
         return userLoginResponseDto;
     }
@@ -108,7 +107,7 @@ public class UserServiceImpl implements UserService {
     public ShowUserResponseDto ShowUser() {
 
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        String uuid = (String) authentication.getPrincipal(); // uuid를 가져옵니다.
+        String uuid = (String) authentication.getPrincipal();
 
         User user = userRepository.findByUuid(uuid);
 
@@ -124,12 +123,12 @@ public class UserServiceImpl implements UserService {
     public void updateUser(UserRequestDto userRequestDto) {
 
         // 400 : 데이터 누락
-        if(userRequestDto==null){
+        if (userRequestDto == null) {
             throw new BaseException(BaseResponseStatus.WRONG_PARAM);
         }
 
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        String uuid = (String) authentication.getPrincipal(); // uuid를 가져옵니다.
+        String uuid = (String) authentication.getPrincipal();
 
         User user = userRepository.findByUuid(uuid);
 
@@ -139,10 +138,13 @@ public class UserServiceImpl implements UserService {
 
         User updatedUser = User.builder()
             .user_id(user.getUser_id())
-            .nickname(userRequestDto.getNickname() != null ? userRequestDto.getNickname() : user.getNickname())
+            .nickname(userRequestDto.getNickname() != null ? userRequestDto.getNickname()
+                : user.getNickname())
             .email(userRequestDto.getEmail() != null ? userRequestDto.getEmail() : user.getEmail())
+            .profileImageUrl(user.getProfileImageUrl() != null ? user.getProfileImageUrl() : null)
             .password(user.getPassword())
             .uuid(user.getUuid())
+            .role(user.getRole())
             .refreshToken(user.getRefreshToken())
             .build();
 
@@ -154,9 +156,10 @@ public class UserServiceImpl implements UserService {
     @Transactional
     public void deleteUser(UserRequestDto userRequestDto) {
         // 400 : 데이터 누락
-        if(userRequestDto==null){
+        if (userRequestDto == null) {
             throw new BaseException(BaseResponseStatus.WRONG_PARAM);
         }
+
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         String uuid = (String) authentication.getPrincipal();
 
@@ -191,7 +194,8 @@ public class UserServiceImpl implements UserService {
         }
 
         // 현재 비밀번호 확인
-        if (!bCryptPasswordEncoder.matches(chgPasswordRequestDto.getCurrentPassword(), user.getPassword())) {
+        if (!bCryptPasswordEncoder.matches(chgPasswordRequestDto.getCurrentPassword(),
+            user.getPassword())) {
             throw new BaseException(BaseResponseStatus.INVALID_CURRENT_PASSWORD);
         }
 
@@ -202,7 +206,8 @@ public class UserServiceImpl implements UserService {
         }
 
         // 2602 : 비밀번호 불일치
-        if (!chgPasswordRequestDto.getNewPassword().equals(chgPasswordRequestDto.getConfirmPassword())) {
+        if (!chgPasswordRequestDto.getNewPassword()
+            .equals(chgPasswordRequestDto.getConfirmPassword())) {
             throw new BaseException(BaseResponseStatus.UNMATCHED_PASSWORD);
         }
 
@@ -212,10 +217,42 @@ public class UserServiceImpl implements UserService {
             .password(bCryptPasswordEncoder.encode(chgPasswordRequestDto.getNewPassword()))
             .email(user.getEmail())
             .uuid(user.getUuid())
+            .role(user.getRole())
             .isEmailVerified(user.isEmailVerified())
             .build();
 
         userRepository.save(user);
+    }
+
+    public UserTokenResponseDto rotateToken() {
+
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        String uuid = (String) authentication.getPrincipal();
+
+        User user = userRepository.findByUuid(uuid);
+
+        if (user == null) {
+            throw new BaseException(BaseResponseStatus.NO_EXIST_MEMBERS);
+        }
+        String newAccessToken = tokenProvider.createAccessToken(user.getUuid());
+        String newRefreshToken = tokenProvider.createRefreshToken(user.getUuid());
+
+        User updatedUser = User.builder()
+            .user_id(user.getUser_id())
+            .nickname(user.getNickname())
+            .email(user.getEmail())
+            .password(user.getPassword())
+            .uuid(user.getUuid())
+            .role(user.getRole())
+            .refreshToken(newRefreshToken)
+            .build();
+
+        userRepository.save(updatedUser);
+
+        UserTokenResponseDto userTokenResponseDto = UserTokenResponseDto.entityToDto(
+            newAccessToken,
+            newRefreshToken);
+        return userTokenResponseDto;
     }
 
 }

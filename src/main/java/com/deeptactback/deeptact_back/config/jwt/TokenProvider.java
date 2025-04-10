@@ -1,5 +1,7 @@
 package com.deeptactback.deeptact_back.config.jwt;
 
+import com.deeptactback.deeptact_back.domain.User;
+import com.deeptactback.deeptact_back.repository.UserRepository;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
@@ -13,6 +15,7 @@ import org.springframework.stereotype.Component;
 
 @Component
 public class TokenProvider {
+    private final UserRepository userRepository;
 
     // 비밀키 생성 (실제 운영환경에서는 설정 파일에서 관리하는 것을 권장)
     private final Key key = Keys.secretKeyFor(SignatureAlgorithm.HS256);
@@ -23,10 +26,11 @@ public class TokenProvider {
     private final long refreshTokenExpirationTime;
 
     // application.properties에서 값을 가져옴
-    public TokenProvider(@Value("${jwt.secret}") String secretKey,
+    public TokenProvider(UserRepository userRepository, @Value("${jwt.secret}") String secretKey,
         @Value("${jwt.access-token-expiration-time}") long accessTokenExpirationTime,
         @Value("${jwt.refresh-token-expiration-time}") long refreshTokenExpirationTime) {
         secretKey = secretKey.replaceAll("\\s+", "");
+        this.userRepository = userRepository;
         this.signingKey = Keys.hmacShaKeyFor(Decoders.BASE64URL.decode(secretKey));
         this.accessTokenExpirationTime = accessTokenExpirationTime;
         this.refreshTokenExpirationTime = refreshTokenExpirationTime;
@@ -51,16 +55,7 @@ public class TokenProvider {
             .compact();
     }
 
-    // 토큰 유효시간 검증 메서드
-    public boolean validateAccessToken(String token) {
-        return validateToken(token);
-    }
-
-    public boolean validateRefreshToken(String token) {
-        return validateToken(token);
-    }
-
-    private boolean validateToken(String token) {
+    public boolean validateToken(String token, String tokenType) {
         try {
             Claims claims = Jwts.parserBuilder()
                 .setSigningKey(signingKey)
@@ -68,32 +63,24 @@ public class TokenProvider {
                 .parseClaimsJws(token)
                 .getBody();
 
-            return claims.getExpiration().after(new Date());
+            if (!claims.getExpiration().after(new Date())) {
+                return false;
+            }
+
+            if (tokenType.equals("refresh")) {
+                String uuid = claims.getSubject();
+                User user = userRepository.findByUuid(uuid);
+                if (user == null || !user.getRefreshToken().equals(token)) {
+                    return false;
+                }
+            }
+
+            return true;
         } catch (Exception e) {
             return false;
         }
     }
 
-    public String getUuidFromToken(String token) {
-        Claims claims = Jwts.parserBuilder()
-            .setSigningKey(signingKey)
-            .build()
-            .parseClaimsJws(token)
-            .getBody();
-
-        return claims.getSubject();
-    }
-
-    // JWT 디코딩 메서드
-    public Claims decodeToken(String token) {
-        return Jwts.parserBuilder()
-            .setSigningKey(signingKey)
-            .build()
-            .parseClaimsJws(token)
-            .getBody(); // 클레임 반환
-    }
-
-    // 토큰에서 값 추출
     public String getSubject(String token) {
         String subject = Jwts.parser()
             .setSigningKey(signingKey)
@@ -101,10 +88,6 @@ public class TokenProvider {
             .getBody()
             .getSubject();
 
-        try {
-            return subject;
-        } catch (NumberFormatException e) {
-            throw new IllegalArgumentException("Invalid subject format: " + subject, e);
-        }
+        return subject;
     }
 }

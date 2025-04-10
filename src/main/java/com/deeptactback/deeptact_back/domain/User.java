@@ -38,13 +38,13 @@ public class User {
     private boolean isEmailVerified;
 
     @Column(nullable = false)
-    private boolean role;
+    private String role;
 
     private String profileImageUrl;
 
 
     @Builder
-    public User(int user_id,String uuid, String nickname, String email, String password, String refreshToken, boolean isEmailVerified, boolean role, String profileImageUrl) {
+    public User(int user_id,String uuid, String nickname, String email, String password, String refreshToken, boolean isEmailVerified, String role, String profileImageUrl) {
         this.user_id = user_id;
         this.uuid = uuid != null ? uuid : UUID.randomUUID().toString();
         this.nickname = nickname;
