@@ -6,14 +6,14 @@ import lombok.Data;
 
 @Data
 @Builder
-public class ShowUserResponseDto {
+public class UserShowRespDto {
     private String nickname;
     private String email;
     private String profileImageUrl;
     private boolean isVerified;
 
-    public static ShowUserResponseDto entityToDto(User user){
-        return ShowUserResponseDto.builder()
+    public static UserShowRespDto entityToDto(User user){
+        return UserShowRespDto.builder()
             .nickname(user.getNickname())
             .email(user.getEmail())
             .profileImageUrl(user.getProfileImageUrl())

@@ -1,10 +1,14 @@
 package com.deeptactback.deeptact_back.domain;
 
+import com.deeptactback.deeptact_back.common.Role;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import java.time.LocalDateTime;
 import java.util.UUID;
 import lombok.AccessLevel;
 import lombok.Builder;
@@ -18,13 +22,10 @@ public class User {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private int user_id;
+    private int userId;
 
     @Column(nullable = false, unique = true)
     private String uuid;
-
-    @Column(nullable = false)
-    private String nickname;
 
     @Column(nullable = false)
     private String email;
@@ -32,27 +33,34 @@ public class User {
     @Column(nullable = false)
     private String password;
 
+    @Column(nullable = false)
+    private String nickname;
+
     private String refreshToken;
+
+    private String profileImageUrl;
 
     @Column(nullable = false)
     private boolean isEmailVerified;
 
+    @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private String role;
+    private Role role;
 
-    private String profileImageUrl;
-
+    private LocalDateTime createdAt;
 
     @Builder
-    public User(int user_id,String uuid, String nickname, String email, String password, String refreshToken, boolean isEmailVerified, String role, String profileImageUrl) {
-        this.user_id = user_id;
+    public User(int user_id, String uuid, String email, String password, String nickname,
+        String refreshToken, String profileImageUrl, boolean isEmailVerified, Role role, LocalDateTime createdAt) {
+        this.userId = user_id;
         this.uuid = uuid != null ? uuid : UUID.randomUUID().toString();
-        this.nickname = nickname;
         this.email = email;
         this.password = password;
+        this.nickname = nickname;
         this.refreshToken = refreshToken;
-        this.isEmailVerified = isEmailVerified;
-        this.role = role;
         this.profileImageUrl = profileImageUrl;
+        this.isEmailVerified = isEmailVerified;
+        this.role = role != null ? role : Role.USER;
+        this.createdAt = createdAt != null ? createdAt : LocalDateTime.now();
     }
 }

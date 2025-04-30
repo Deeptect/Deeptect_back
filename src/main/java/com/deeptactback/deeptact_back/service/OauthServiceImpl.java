@@ -2,7 +2,7 @@ package com.deeptactback.deeptact_back.service;
 
 import com.deeptactback.deeptact_back.common.BaseException;
 import com.deeptactback.deeptact_back.common.BaseResponseStatus;
-import com.deeptactback.deeptact_back.dto.OauthResponseDto;
+import com.deeptactback.deeptact_back.dto.OauthRespDto;
 import com.deeptactback.deeptact_back.dto.oauth.GoogleInfo;
 import com.deeptactback.deeptact_back.dto.oauth.GoogleToken;
 import com.deeptactback.deeptact_back.dto.oauth.KakaoInfo;
@@ -105,7 +105,7 @@ public class OauthServiceImpl implements OauthService {
     }
 
     @Override
-    public OauthResponseDto getGoogleUserInfo(String code)
+    public OauthRespDto getGoogleUserInfo(String code)
         throws URISyntaxException, JsonProcessingException {
 
         if(code == null){
@@ -115,8 +115,8 @@ public class OauthServiceImpl implements OauthService {
         GoogleToken googleToken = getGoogleToken(code);
         GoogleInfo googleInfo = getGoogleInfo(googleToken);
 
-        OauthResponseDto oauthResponseDto = OauthResponseDto.entityToDto(googleInfo, googleToken);
-        return oauthResponseDto;
+        OauthRespDto oauthRespDto = OauthRespDto.entityToDto(googleInfo, googleToken);
+        return oauthRespDto;
     }
 
     @Override
@@ -191,7 +191,7 @@ public class OauthServiceImpl implements OauthService {
     }
 
     @Override
-    public OauthResponseDto getKakaoUserInfo(String code)
+    public OauthRespDto getKakaoUserInfo(String code)
         throws URISyntaxException, JsonProcessingException {
         if(code == null){
             throw new BaseException(BaseResponseStatus.WRONG_PARAM);
@@ -200,9 +200,9 @@ public class OauthServiceImpl implements OauthService {
         KakaoToken kakaoToken = getKakaoToken(code);
         KakaoInfo kakaoInfo = getKakaoInfo(kakaoToken);
 
-        OauthResponseDto oauthResponseDto = OauthResponseDto.entityToDto(kakaoInfo, kakaoToken);
+        OauthRespDto oauthRespDto = OauthRespDto.entityToDto(kakaoInfo, kakaoToken);
 
-        return oauthResponseDto;
+        return oauthRespDto;
     }
 
     @Override
@@ -282,7 +282,7 @@ public class OauthServiceImpl implements OauthService {
     }
 
     @Override
-    public OauthResponseDto getNaverUserInfo(String code)
+    public OauthRespDto getNaverUserInfo(String code)
         throws URISyntaxException, JsonProcessingException {
 
         if(code == null){
@@ -292,9 +292,9 @@ public class OauthServiceImpl implements OauthService {
         NaverToken naverToken = getNaverToken(code);
         NaverInfo naverInfo = getNaverInfo(naverToken);
 
-        OauthResponseDto oauthResponseDto = OauthResponseDto.entityToDto(naverInfo, naverToken);
+        OauthRespDto oauthRespDto = OauthRespDto.entityToDto(naverInfo, naverToken);
 
-        return oauthResponseDto;
+        return oauthRespDto;
     }
 
     @Override

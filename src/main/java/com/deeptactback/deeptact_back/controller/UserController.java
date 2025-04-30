@@ -3,10 +3,10 @@ package com.deeptactback.deeptact_back.controller;
 import com.deeptactback.deeptact_back.common.BaseException;
 import com.deeptactback.deeptact_back.common.BaseResponseStatus;
 import com.deeptactback.deeptact_back.common.CMResponse;
-import com.deeptactback.deeptact_back.dto.ChgPasswordRequestDto;
-import com.deeptactback.deeptact_back.dto.ShowUserResponseDto;
-import com.deeptactback.deeptact_back.dto.UserLoginResponseDto;
-import com.deeptactback.deeptact_back.dto.UserRequestDto;
+import com.deeptactback.deeptact_back.dto.ChgPasswordReqDto;
+import com.deeptactback.deeptact_back.dto.UserShowRespDto;
+import com.deeptactback.deeptact_back.dto.UserLoginRespDto;
+import com.deeptactback.deeptact_back.dto.UserReqDto;
 import com.deeptactback.deeptact_back.service.EmailService;
 import com.deeptactback.deeptact_back.service.UserService;
 import com.deeptactback.deeptact_back.vo.UserShowResponseVo;
@@ -32,9 +32,9 @@ public class UserController {
     // 입력값 : userRequestDto
     // 반환값 : code, message
     @PostMapping("/register")
-    public CMResponse<Void> registerUser(@RequestBody UserRequestDto userRequestDto) {
+    public CMResponse<Void> registerUser(@RequestBody UserReqDto userReqDto) {
         try {
-            userService.RegisterUser(userRequestDto);
+            userService.RegisterUser(userReqDto);
             return CMResponse.success(BaseResponseStatus.SUCCESS);
         } catch (BaseException e) {
             return CMResponse.fail(e.getErrorCode());
@@ -48,10 +48,10 @@ public class UserController {
     // 입력값 : username, email, password, password_confirmation
     // 반환값 : code, message, Access Token, Refresh Token
     @PostMapping("/login")
-    public CMResponse<UserLoginResponseVo> loginUser(@RequestBody UserRequestDto userRequestDto) {
+    public CMResponse<UserLoginResponseVo> loginUser(@RequestBody UserReqDto userReqDto) {
         try {
-            UserLoginResponseDto userLoginResponseDto = userService.LoginUser(userRequestDto);
-            UserLoginResponseVo userLoginResponseVo = UserLoginResponseVo.dtoToVo(userLoginResponseDto);
+            UserLoginRespDto userLoginRespDto = userService.LoginUser(userReqDto);
+            UserLoginResponseVo userLoginResponseVo = UserLoginResponseVo.dtoToVo(userLoginRespDto);
             return CMResponse.success(BaseResponseStatus.SUCCESS, userLoginResponseVo);
         } catch (BaseException e) {
             return CMResponse.fail(e.getErrorCode());
@@ -67,8 +67,8 @@ public class UserController {
     @GetMapping("/show")
     public CMResponse<UserShowResponseVo> showUser() {
         try{
-            ShowUserResponseDto showUserResponseDto = userService.ShowUser();
-            UserShowResponseVo userShowResponseVo = UserShowResponseVo.dtoToVo(showUserResponseDto);
+            UserShowRespDto userShowRespDto = userService.ShowUser();
+            UserShowResponseVo userShowResponseVo = UserShowResponseVo.dtoToVo(userShowRespDto);
             return CMResponse.success(BaseResponseStatus.SUCCESS, userShowResponseVo);
         } catch (BaseException e) {
             return CMResponse.fail(e.getErrorCode());
@@ -82,9 +82,9 @@ public class UserController {
     // 입력값 : Token, userRequestDto
     // 출력값 : code, message, null
     @PatchMapping("/update")
-    public CMResponse<Void> updateUser(@RequestBody UserRequestDto userRequestDto) {
+    public CMResponse<Void> updateUser(@RequestBody UserReqDto userReqDto) {
         try{
-            userService.updateUser(userRequestDto);
+            userService.updateUser(userReqDto);
             return CMResponse.success(BaseResponseStatus.SUCCESS);
         } catch (BaseException e) {
             return CMResponse.fail(e.getErrorCode());
@@ -98,9 +98,9 @@ public class UserController {
     // 입력값 : password
     // 출력값 : code, message, null
     @DeleteMapping("/delete")
-    public CMResponse<Void> deleteUser(@RequestBody UserRequestDto userRequestDto) {
+    public CMResponse<Void> deleteUser(@RequestBody UserReqDto userReqDto) {
         try {
-            userService.deleteUser(userRequestDto);
+            userService.deleteUser(userReqDto);
             return CMResponse.success(BaseResponseStatus.SUCCESS);
         } catch (BaseException e) {
             return CMResponse.fail(e.getErrorCode());
@@ -114,9 +114,9 @@ public class UserController {
     // 입력값 : currentPassword, password, confirmPassword
     // 출력값 : code, message, null
     @PatchMapping("/password/change")
-    public CMResponse<Void> chgPassword(@RequestBody ChgPasswordRequestDto chgPasswordRequestDto) {
+    public CMResponse<Void> chgPassword(@RequestBody ChgPasswordReqDto chgPasswordReqDto) {
         try{
-            userService.chgPassword(chgPasswordRequestDto);
+            userService.chgPassword(chgPasswordReqDto);
             return CMResponse.success(BaseResponseStatus.SUCCESS);
         } catch (BaseException e) {
             return CMResponse.fail(e.getErrorCode());

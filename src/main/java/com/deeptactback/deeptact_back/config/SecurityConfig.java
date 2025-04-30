@@ -46,7 +46,9 @@ public class SecurityConfig {
                     "/api/v1/email/*",
                     "/api/v1/oauth/*",
                     "/api/v1/user/register",
-                    "/api/v1/user/login"
+                    "/api/v1/user/login",
+                    "/api/v1/video/fetch-shorts",
+                    "/api/v1/video/videos"
                 )
                 .permitAll()
                 .anyRequest().authenticated())

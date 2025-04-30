@@ -4,7 +4,7 @@ import com.deeptactback.deeptact_back.common.BaseException;
 import com.deeptactback.deeptact_back.common.BaseResponseStatus;
 import com.deeptactback.deeptact_back.config.redis.RedisUtil;
 import com.deeptactback.deeptact_back.domain.User;
-import com.deeptactback.deeptact_back.dto.ResetPasswordRequestDto;
+import com.deeptactback.deeptact_back.dto.ResetPasswordReqDto;
 import com.deeptactback.deeptact_back.repository.UserRepository;
 import jakarta.mail.MessagingException;
 import jakarta.mail.internet.MimeMessage;
@@ -136,7 +136,7 @@ public class EmailServiceImpl implements EmailService {
             throw new BaseException(BaseResponseStatus.NO_EXIST_MEMBERS);
         }
         user = User.builder()
-            .user_id(user.getUser_id())
+            .user_id(user.getUserId())
             .nickname(user.getNickname())
             .password(user.getPassword())
             .email(user.getEmail())
@@ -149,23 +149,23 @@ public class EmailServiceImpl implements EmailService {
 
     @Override
     @Transactional
-    public void resetPassword(ResetPasswordRequestDto resetPasswordRequestDto) {
-        verifyCode(resetPasswordRequestDto.getMail(), resetPasswordRequestDto.getCode());
+    public void resetPassword(ResetPasswordReqDto resetPasswordReqDto) {
+        verifyCode(resetPasswordReqDto.getMail(), resetPasswordReqDto.getCode());
 
-        if (!resetPasswordRequestDto.getPassword().equals(resetPasswordRequestDto.getConfirmPassword())) {
+        if (!resetPasswordReqDto.getPassword().equals(resetPasswordReqDto.getConfirmPassword())) {
             throw new BaseException(BaseResponseStatus.UNMATCHED_PASSWORD);
         }
 
-        User user = userRepository.findByEmail(resetPasswordRequestDto.getMail());
+        User user = userRepository.findByEmail(resetPasswordReqDto.getMail());
         if (user == null) {
             throw new BaseException(BaseResponseStatus.NO_EXIST_MEMBERS);
         }
 
         // 비밀번호 해싱
-        String hashedPassword = bCryptPasswordEncoder.encode(resetPasswordRequestDto.getPassword());
+        String hashedPassword = bCryptPasswordEncoder.encode(resetPasswordReqDto.getPassword());
 
         user = User.builder()
-            .user_id(user.getUser_id())
+            .user_id(user.getUserId())
             .nickname(user.getNickname())
             .password(hashedPassword)
             .email(user.getEmail())
@@ -175,7 +175,7 @@ public class EmailServiceImpl implements EmailService {
 
         userRepository.save(user);
 
-        redisUtil.deleteData(resetPasswordRequestDto.getMail());
+        redisUtil.deleteData(resetPasswordReqDto.getMail());
     }
 
 }

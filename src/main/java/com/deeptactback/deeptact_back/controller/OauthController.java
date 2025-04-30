@@ -3,8 +3,8 @@ package com.deeptactback.deeptact_back.controller;
 import com.deeptactback.deeptact_back.common.BaseException;
 import com.deeptactback.deeptact_back.common.BaseResponseStatus;
 import com.deeptactback.deeptact_back.common.CMResponse;
-import com.deeptactback.deeptact_back.dto.OauthRequestDto;
-import com.deeptactback.deeptact_back.dto.OauthResponseDto;
+import com.deeptactback.deeptact_back.dto.OauthReqDto;
+import com.deeptactback.deeptact_back.dto.OauthRespDto;
 import com.deeptactback.deeptact_back.service.OauthService;
 import com.deeptactback.deeptact_back.vo.OauthResponseVo;
 import lombok.RequiredArgsConstructor;
@@ -50,18 +50,18 @@ public class OauthController {
 
     @PostMapping("/{provider}")
     public CMResponse<OauthResponseVo> getOauthAccount(@PathVariable String provider,
-        @RequestBody OauthRequestDto oauthRequestDto) {
+        @RequestBody OauthReqDto oauthReqDto) {
         try {
-            OauthResponseDto oauthResponsedto;
+            OauthRespDto oauthResponsedto;
             switch (provider.toLowerCase()) {
                 case "kakao":
-                    oauthResponsedto = oauthService.getKakaoUserInfo(oauthRequestDto.getCode());
+                    oauthResponsedto = oauthService.getKakaoUserInfo(oauthReqDto.getCode());
                     break;
                 case "google":
-                    oauthResponsedto = oauthService.getGoogleUserInfo(oauthRequestDto.getCode());
+                    oauthResponsedto = oauthService.getGoogleUserInfo(oauthReqDto.getCode());
                     break;
                 case "naver":
-                    oauthResponsedto = oauthService.getNaverUserInfo(oauthRequestDto.getCode());
+                    oauthResponsedto = oauthService.getNaverUserInfo(oauthReqDto.getCode());
                     break;
                 default:
                     throw new BaseException(BaseResponseStatus.INVALID_PROVIDER);

@@ -11,14 +11,14 @@ import lombok.Data;
 
 @Data
 @Builder
-public class OauthResponseDto {
+public class OauthRespDto {
     private String email;
     private String nickname;
     private String accessToken;
     private String refreshToken;
 
-    public static OauthResponseDto entityToDto(KakaoInfo kakaoInfo, KakaoToken kakaoToken) {
-        return OauthResponseDto.builder()
+    public static OauthRespDto entityToDto(KakaoInfo kakaoInfo, KakaoToken kakaoToken) {
+        return OauthRespDto.builder()
             .email(kakaoInfo.getEmail())
             .nickname(kakaoInfo.getNickname())
             .accessToken(kakaoToken.getAccessToken())
@@ -26,8 +26,8 @@ public class OauthResponseDto {
             .build();
     }
 
-    public static OauthResponseDto entityToDto(NaverInfo naverInfo, NaverToken naverToken) {
-        return OauthResponseDto.builder()
+    public static OauthRespDto entityToDto(NaverInfo naverInfo, NaverToken naverToken) {
+        return OauthRespDto.builder()
             .email(naverInfo.getEmail())
             .nickname(naverInfo.getName())
             .accessToken(naverToken.getAccessToken())
@@ -35,8 +35,8 @@ public class OauthResponseDto {
             .build();
     }
 
-    public static OauthResponseDto entityToDto(GoogleInfo googleInfo, GoogleToken googleToken) {
-        return OauthResponseDto.builder()
+    public static OauthRespDto entityToDto(GoogleInfo googleInfo, GoogleToken googleToken) {
+        return OauthRespDto.builder()
             .email(googleInfo.getEmail())
             .nickname(googleInfo.getName())
             .accessToken(googleToken.getAccessToken())
