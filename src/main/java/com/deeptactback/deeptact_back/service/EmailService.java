@@ -1,6 +1,6 @@
 package com.deeptactback.deeptact_back.service;
 
-import com.deeptactback.deeptact_back.dto.ResetPasswordRequestDto;
+import com.deeptactback.deeptact_back.dto.ResetPasswordReqDto;
 import jakarta.mail.internet.MimeMessage;
 
 public interface EmailService {
@@ -18,5 +18,5 @@ public interface EmailService {
 
     void verifyCode(String email, String code);
 
-    void resetPassword(ResetPasswordRequestDto resetPasswordRequestDto);
+    void resetPassword(ResetPasswordReqDto resetPasswordReqDto);
 }

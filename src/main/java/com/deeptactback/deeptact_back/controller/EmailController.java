@@ -3,8 +3,8 @@ package com.deeptactback.deeptact_back.controller;
 import com.deeptactback.deeptact_back.common.BaseException;
 import com.deeptactback.deeptact_back.common.BaseResponseStatus;
 import com.deeptactback.deeptact_back.common.CMResponse;
-import com.deeptactback.deeptact_back.dto.EmailRequestDto;
-import com.deeptactback.deeptact_back.dto.ResetPasswordRequestDto;
+import com.deeptactback.deeptact_back.dto.EmailReqDto;
+import com.deeptactback.deeptact_back.dto.ResetPasswordReqDto;
 import com.deeptactback.deeptact_back.service.EmailService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -22,9 +22,9 @@ public class EmailController {
 
     // 이메일 인증코드 전송
     @PostMapping("/authcode")
-    public CMResponse<Void> sendAuthEmail(@RequestBody EmailRequestDto emailRequestDto) {
+    public CMResponse<Void> sendAuthEmail(@RequestBody EmailReqDto emailReqDto) {
         try {
-            emailService.sendEmail(emailRequestDto.getMail());
+            emailService.sendEmail(emailReqDto.getMail());
             return CMResponse.success(BaseResponseStatus.SUCCESS);
         } catch (BaseException e) {
             return CMResponse.fail(e.getErrorCode());
@@ -35,9 +35,9 @@ public class EmailController {
     }
 
     @PostMapping("/verify")
-    public CMResponse<Void> verifyCode(@RequestBody EmailRequestDto emailRequestDto) {
+    public CMResponse<Void> verifyCode(@RequestBody EmailReqDto emailReqDto) {
         try {
-            emailService.verifyCode(emailRequestDto.getMail(), emailRequestDto.getVerifyCode());
+            emailService.verifyCode(emailReqDto.getMail(), emailReqDto.getVerifyCode());
             return CMResponse.success(BaseResponseStatus.SUCCESS);
         } catch (BaseException e) {
             return CMResponse.fail(e.getErrorCode());
@@ -51,9 +51,9 @@ public class EmailController {
     // 입력값 :
     // 출력값 :
     @PostMapping("/password/reset")
-    public CMResponse<Void> resetPassword(@RequestBody ResetPasswordRequestDto resetPasswordRequestDto) {
+    public CMResponse<Void> resetPassword(@RequestBody ResetPasswordReqDto resetPasswordReqDto) {
         try {
-            emailService.resetPassword(resetPasswordRequestDto);
+            emailService.resetPassword(resetPasswordReqDto);
             return CMResponse.success(BaseResponseStatus.SUCCESS);
         } catch (BaseException e) {
             return CMResponse.fail(e.getErrorCode());

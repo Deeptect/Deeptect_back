@@ -1,5 +1,11 @@
 package com.deeptactback.deeptact_back.service;
 
+import com.deeptactback.deeptact_back.common.IsDeepfake;
+import com.deeptactback.deeptact_back.common.OriginType;
+import com.deeptactback.deeptact_back.domain.User;
+import com.deeptactback.deeptact_back.domain.Video;
+import com.deeptactback.deeptact_back.repository.UserRepository;
+import com.deeptactback.deeptact_back.repository.VideoRepository;
 import com.google.api.client.googleapis.javanet.GoogleNetHttpTransport;
 import com.google.api.client.http.javanet.NetHttpTransport;
 import com.google.api.client.json.JsonFactory;
@@ -18,6 +24,8 @@ import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -27,33 +35,62 @@ public class YoutubeShortsFetchServiceImpl implements YoutubeShortsFetchService 
 
     private final CloudflareR2Service cloudflareR2Service;
 
+    private final VideoRepository videoRepository;
+    private final UserRepository userRepository;
+    @Value("${cloudflare.r2.public-url}")
+    private String publicUrl;
+
     @Value("${youtube.api.key}")
     private String apiKey;
 
     private static final JsonFactory JSON_FACTORY = GsonFactory.getDefaultInstance();
     private static final String APPLICATION_NAME = "Youtube Shorts Fetcher";
-    private static final long MAX_RESULTS = 1; // 영상 개수
+    private static final long MAX_RESULTS = 10; // 영상 개수
 
     public List<String> fetchAndStoreYoutubeShorts() throws IOException, GeneralSecurityException {
         List<String> storedFileNames = new ArrayList<>();
         List<SearchResult> shortVideos = searchShorts();
 
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        String uuid = (String) authentication.getPrincipal();
+        User user = userRepository.findByUuid(uuid);
+
         for (SearchResult video : shortVideos) {
             String videoId = video.getId().getVideoId();
             String title = video.getSnippet().getTitle();
+            String description = video.getSnippet().getDescription();
+            String thumbnailUrl = video.getSnippet().getThumbnails().getDefault().getUrl();
+            LocalDateTime uploadTime = LocalDateTime.now();
 
             try {
                 String fileName = streamVideoDirectlyToR2(videoId, title);
                 if (fileName != null) {
+                    String storageUrl = publicUrl + fileName;
+
+                    Video entity = Video.builder()
+                        .user(user)
+                        .originType(OriginType.ADMIN)
+                        .youtubeVideoId(videoId)
+                        .title(title)
+                        .description(description)
+                        .uploadTime(uploadTime)
+                        .storageUrl(storageUrl)
+                        .thumbnailUrl(thumbnailUrl)
+                        .isDeepfake(IsDeepfake.N)
+                        .detectionScore(0)
+                        .build();
+
+                    videoRepository.save(entity);
                     storedFileNames.add(fileName);
                 }
             } catch (Exception e) {
-                log.error("YouTube 쇼츠 fetch 실패: {} - {}", videoId, title, e);
+                log.error("YouTube 쇼츠 처리 실패: {} - {}", videoId, title, e);
             }
         }
 
         return storedFileNames;
     }
+
 
     public List<SearchResult> searchShorts() throws IOException, GeneralSecurityException {
         final NetHttpTransport httpTransport = GoogleNetHttpTransport.newTrustedTransport();

@@ -1,6 +1,6 @@
 package com.deeptactback.deeptact_back.vo;
 
-import com.deeptactback.deeptact_back.dto.ShowUserResponseDto;
+import com.deeptactback.deeptact_back.dto.UserShowRespDto;
 import lombok.Builder;
 import lombok.Data;
 
@@ -21,11 +21,11 @@ public class UserShowResponseVo {
     }
 
     public static UserShowResponseVo dtoToVo(
-        ShowUserResponseDto showUserResponseDto) {
+        UserShowRespDto userShowRespDto) {
         return UserShowResponseVo.builder()
-            .nickname(showUserResponseDto.getNickname())
-            .email(showUserResponseDto.getEmail())
-            .isVerified(showUserResponseDto.isVerified())
+            .nickname(userShowRespDto.getNickname())
+            .email(userShowRespDto.getEmail())
+            .isVerified(userShowRespDto.isVerified())
             .build();
     }
 }

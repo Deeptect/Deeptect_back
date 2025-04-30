@@ -4,11 +4,11 @@ import com.deeptactback.deeptact_back.common.BaseException;
 import com.deeptactback.deeptact_back.common.BaseResponseStatus;
 import com.deeptactback.deeptact_back.config.jwt.TokenProvider;
 import com.deeptactback.deeptact_back.domain.User;
-import com.deeptactback.deeptact_back.dto.ChgPasswordRequestDto;
-import com.deeptactback.deeptact_back.dto.ShowUserResponseDto;
-import com.deeptactback.deeptact_back.dto.UserLoginResponseDto;
-import com.deeptactback.deeptact_back.dto.UserRequestDto;
-import com.deeptactback.deeptact_back.dto.UserTokenResponseDto;
+import com.deeptactback.deeptact_back.dto.ChgPasswordReqDto;
+import com.deeptactback.deeptact_back.dto.UserShowRespDto;
+import com.deeptactback.deeptact_back.dto.UserLoginRespDto;
+import com.deeptactback.deeptact_back.dto.UserReqDto;
+import com.deeptactback.deeptact_back.dto.UserTokenRespDto;
 import com.deeptactback.deeptact_back.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -30,38 +30,38 @@ public class UserServiceImpl implements UserService {
 
     @Override
     @Transactional
-    public void RegisterUser(UserRequestDto userRequestDto) {
+    public void RegisterUser(UserReqDto userReqDto) {
 
         // 400 : 데이터 누락
-        if (userRequestDto == null || userRequestDto.getPassword() == null
-            || userRequestDto.getEmail() == null || userRequestDto.getConfirmPassword() == null) {
+        if (userReqDto == null || userReqDto.getPassword() == null
+            || userReqDto.getEmail() == null || userReqDto.getConfirmPassword() == null) {
             throw new BaseException(BaseResponseStatus.WRONG_PARAM);
         }
 
         // 2601 : 비밀번호 형식 불일치
-        if (!(userRequestDto.getPassword()).matches(
+        if (!(userReqDto.getPassword()).matches(
             "^(?=.*[a-zA-Z])(?=.*\\d)(?=.*[!@#$%^&*()_+\\-=\\[\\]{};':\"\\\\|,.<>\\/?~]).{8,20}$")) {
             throw new BaseException(BaseResponseStatus.PASSWORD_FORMAT_INVALID);
         }
 
         // 2602 : 비밀번호 불일치
-        if (!userRequestDto.getPassword().equals(userRequestDto.getConfirmPassword())) {
+        if (!userReqDto.getPassword().equals(userReqDto.getConfirmPassword())) {
             throw new BaseException(BaseResponseStatus.UNMATCHED_PASSWORD);
         }
 
         // 2100 : 중복된 이메일
-        if (userRepository.existsByEmail(userRequestDto.getEmail())) {
+        if (userRepository.existsByEmail(userReqDto.getEmail())) {
             throw new BaseException(BaseResponseStatus.DUPLICATE_EMAIL);
         }
 
         User user = User.builder()
-            .nickname(userRequestDto.getNickname())
-            .password(bCryptPasswordEncoder.encode(userRequestDto.getPassword()))
-            .email(userRequestDto.getEmail())
             .uuid(null)
-            .isEmailVerified(false)
-            .role("일반")
+            .email(userReqDto.getEmail())
+            .password(bCryptPasswordEncoder.encode(userReqDto.getPassword()))
+            .nickname(userReqDto.getNickname())
             .profileImageUrl(null)
+            .isEmailVerified(true)
+            .role(null)
             .build();
 
         userRepository.save(user);
@@ -69,43 +69,42 @@ public class UserServiceImpl implements UserService {
 
     @Override
     @Transactional
-    public UserLoginResponseDto LoginUser(UserRequestDto userRequestDto) {
+    public UserLoginRespDto LoginUser(UserReqDto userReqDto) {
 
         // 400 : 데이터 누락
-        if (userRequestDto.getEmail() == null || userRequestDto.getPassword() == null) {
+        if (userReqDto.getEmail() == null || userReqDto.getPassword() == null) {
             throw new BaseException(BaseResponseStatus.WRONG_PARAM);
         }
 
         // 회원 존재 X 2106
-        User user = userRepository.findByEmail(userRequestDto.getEmail());
-        if (user == null || !bCryptPasswordEncoder.matches(userRequestDto.getPassword(),
+        User user = userRepository.findByEmail(userReqDto.getEmail());
+        if (user == null || !bCryptPasswordEncoder.matches(userReqDto.getPassword(),
             user.getPassword())) {
             throw new BaseException(BaseResponseStatus.NO_EXIST_MEMBERS);
         }
+
         String accessToken = tokenProvider.createAccessToken(user.getUuid());
         String refreshToken = tokenProvider.createRefreshToken(user.getUuid());
 
         User updateUser = User.builder()
-            .user_id(user.getUser_id())
-            .nickname(user.getNickname())
+            .user_id(user.getUserId())
+            .uuid(user.getUuid())
             .email(user.getEmail())
             .password(user.getPassword())
-            .uuid(user.getUuid())
+            .nickname(user.getNickname())
             .role(user.getRole())
             .refreshToken(refreshToken)
             .build();
 
         userRepository.save(updateUser);
 
-        UserLoginResponseDto userLoginResponseDto = UserLoginResponseDto.entityToDto(user,
-            accessToken, refreshToken, "normal");
+        UserLoginRespDto userLoginRespDto = UserLoginRespDto.entityToDto(user, accessToken, refreshToken, "provider");
 
-        return userLoginResponseDto;
+        return userLoginRespDto;
     }
 
     @Override
-    public ShowUserResponseDto ShowUser() {
-
+    public UserShowRespDto ShowUser() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         String uuid = (String) authentication.getPrincipal();
 
@@ -114,16 +113,16 @@ public class UserServiceImpl implements UserService {
         if (user == null) {
             throw new BaseException(BaseResponseStatus.NO_EXIST_MEMBERS);
         }
-        ShowUserResponseDto showUserResponseDto = ShowUserResponseDto.entityToDto(user);
-        return showUserResponseDto;
+        UserShowRespDto userShowRespDto = UserShowRespDto.entityToDto(user);
+        return userShowRespDto;
     }
 
     @Override
     @Transactional
-    public void updateUser(UserRequestDto userRequestDto) {
+    public void updateUser(UserReqDto userReqDto) {
 
         // 400 : 데이터 누락
-        if (userRequestDto == null) {
+        if (userReqDto == null) {
             throw new BaseException(BaseResponseStatus.WRONG_PARAM);
         }
 
@@ -137,10 +136,10 @@ public class UserServiceImpl implements UserService {
         }
 
         User updatedUser = User.builder()
-            .user_id(user.getUser_id())
-            .nickname(userRequestDto.getNickname() != null ? userRequestDto.getNickname()
+            .user_id(user.getUserId())
+            .nickname(userReqDto.getNickname() != null ? userReqDto.getNickname()
                 : user.getNickname())
-            .email(userRequestDto.getEmail() != null ? userRequestDto.getEmail() : user.getEmail())
+            .email(userReqDto.getEmail() != null ? userReqDto.getEmail() : user.getEmail())
             .profileImageUrl(user.getProfileImageUrl() != null ? user.getProfileImageUrl() : null)
             .password(user.getPassword())
             .uuid(user.getUuid())
@@ -154,9 +153,9 @@ public class UserServiceImpl implements UserService {
 
     @Override
     @Transactional
-    public void deleteUser(UserRequestDto userRequestDto) {
+    public void deleteUser(UserReqDto userReqDto) {
         // 400 : 데이터 누락
-        if (userRequestDto == null) {
+        if (userReqDto == null) {
             throw new BaseException(BaseResponseStatus.WRONG_PARAM);
         }
 
@@ -170,7 +169,7 @@ public class UserServiceImpl implements UserService {
             throw new BaseException(BaseResponseStatus.NO_EXIST_MEMBERS);
         }
         // 2202
-        if (!bCryptPasswordEncoder.matches(userRequestDto.getPassword(), user.getPassword())) {
+        if (!bCryptPasswordEncoder.matches(userReqDto.getPassword(), user.getPassword())) {
             throw new BaseException(BaseResponseStatus.PASSWORD_MISMATCH);
         }
         userRepository.delete(user);
@@ -178,43 +177,43 @@ public class UserServiceImpl implements UserService {
 
     @Override
     @Transactional
-    public void chgPassword(ChgPasswordRequestDto chgPasswordRequestDto) {
+    public void chgPassword(ChgPasswordReqDto chgPasswordReqDto) {
         // 400 : 데이터 누락
-        if (chgPasswordRequestDto == null || chgPasswordRequestDto.getCurrentPassword() == null ||
-            chgPasswordRequestDto.getNewPassword() == null ||
-            chgPasswordRequestDto.getEmail() == null ||
-            chgPasswordRequestDto.getConfirmPassword() == null) {
+        if (chgPasswordReqDto == null || chgPasswordReqDto.getCurrentPassword() == null ||
+            chgPasswordReqDto.getNewPassword() == null ||
+            chgPasswordReqDto.getEmail() == null ||
+            chgPasswordReqDto.getConfirmPassword() == null) {
             throw new BaseException(BaseResponseStatus.WRONG_PARAM);
         }
 
         // 사용자 조회
-        User user = userRepository.findByEmail(chgPasswordRequestDto.getEmail());
+        User user = userRepository.findByEmail(chgPasswordReqDto.getEmail());
         if (user == null) {
             throw new BaseException(BaseResponseStatus.NO_EXIST_MEMBERS);
         }
 
         // 현재 비밀번호 확인
-        if (!bCryptPasswordEncoder.matches(chgPasswordRequestDto.getCurrentPassword(),
+        if (!bCryptPasswordEncoder.matches(chgPasswordReqDto.getCurrentPassword(),
             user.getPassword())) {
             throw new BaseException(BaseResponseStatus.INVALID_CURRENT_PASSWORD);
         }
 
         // 2601 : 비밀번호 형식 불일치
         String regex = "^(?=.*[a-zA-Z])(?=.*\\d)(?=.*[!@#$%^&*()_+\\-=\\[\\]{};':\"\\\\|,.<>\\/?]).{8,20}$";
-        if (!(chgPasswordRequestDto.getNewPassword()).matches(regex)) {
+        if (!(chgPasswordReqDto.getNewPassword()).matches(regex)) {
             throw new BaseException(BaseResponseStatus.PASSWORD_FORMAT_INVALID);
         }
 
         // 2602 : 비밀번호 불일치
-        if (!chgPasswordRequestDto.getNewPassword()
-            .equals(chgPasswordRequestDto.getConfirmPassword())) {
+        if (!chgPasswordReqDto.getNewPassword()
+            .equals(chgPasswordReqDto.getConfirmPassword())) {
             throw new BaseException(BaseResponseStatus.UNMATCHED_PASSWORD);
         }
 
         user = User.builder()
-            .user_id(user.getUser_id())
+            .user_id(user.getUserId())
             .nickname(user.getNickname())
-            .password(bCryptPasswordEncoder.encode(chgPasswordRequestDto.getNewPassword()))
+            .password(bCryptPasswordEncoder.encode(chgPasswordReqDto.getNewPassword()))
             .email(user.getEmail())
             .uuid(user.getUuid())
             .role(user.getRole())
@@ -224,7 +223,7 @@ public class UserServiceImpl implements UserService {
         userRepository.save(user);
     }
 
-    public UserTokenResponseDto rotateToken() {
+    public UserTokenRespDto rotateToken() {
 
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         String uuid = (String) authentication.getPrincipal();
@@ -238,7 +237,7 @@ public class UserServiceImpl implements UserService {
         String newRefreshToken = tokenProvider.createRefreshToken(user.getUuid());
 
         User updatedUser = User.builder()
-            .user_id(user.getUser_id())
+            .user_id(user.getUserId())
             .nickname(user.getNickname())
             .email(user.getEmail())
             .password(user.getPassword())
@@ -249,10 +248,10 @@ public class UserServiceImpl implements UserService {
 
         userRepository.save(updatedUser);
 
-        UserTokenResponseDto userTokenResponseDto = UserTokenResponseDto.entityToDto(
+        UserTokenRespDto userTokenRespDto = UserTokenRespDto.entityToDto(
             newAccessToken,
             newRefreshToken);
-        return userTokenResponseDto;
+        return userTokenRespDto;
     }
 
 }

@@ -1,6 +1,6 @@
 package com.deeptactback.deeptact_back.vo;
 
-import com.deeptactback.deeptact_back.dto.UserTokenResponseDto;
+import com.deeptactback.deeptact_back.dto.UserTokenRespDto;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -19,10 +19,10 @@ public class UserTokenResponseVo {
     }
 
 
-    public static UserTokenResponseVo dtoToVo(UserTokenResponseDto userTokenResponseDto) {
+    public static UserTokenResponseVo dtoToVo(UserTokenRespDto userTokenRespDto) {
         return UserTokenResponseVo.builder()
-            .accessToken(userTokenResponseDto.getAccessToken())
-            .refreshToken(userTokenResponseDto.getRefreshToken())
+            .accessToken(userTokenRespDto.getAccessToken())
+            .refreshToken(userTokenRespDto.getRefreshToken())
             .build();
     }
 }

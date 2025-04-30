@@ -3,7 +3,7 @@ package com.deeptactback.deeptact_back.controller;
 import com.deeptactback.deeptact_back.common.BaseException;
 import com.deeptactback.deeptact_back.common.BaseResponseStatus;
 import com.deeptactback.deeptact_back.common.CMResponse;
-import com.deeptactback.deeptact_back.dto.UserTokenResponseDto;
+import com.deeptactback.deeptact_back.dto.UserTokenRespDto;
 import com.deeptactback.deeptact_back.service.UserService;
 import com.deeptactback.deeptact_back.vo.UserTokenResponseVo;
 import lombok.RequiredArgsConstructor;
@@ -21,8 +21,8 @@ public class TokenController {
     @GetMapping("/rotate")
     public CMResponse<UserTokenResponseVo> rotateToken() {
         try{
-            UserTokenResponseDto userTokenResponseDto = userService.rotateToken();
-            UserTokenResponseVo userTokenResponseVo = UserTokenResponseVo.dtoToVo(userTokenResponseDto);
+            UserTokenRespDto userTokenRespDto = userService.rotateToken();
+            UserTokenResponseVo userTokenResponseVo = UserTokenResponseVo.dtoToVo(userTokenRespDto);
             return CMResponse.success(BaseResponseStatus.SUCCESS, userTokenResponseVo);
         } catch (BaseException e) {
             return CMResponse.fail(e.getErrorCode());

@@ -1,6 +1,6 @@
 package com.deeptactback.deeptact_back.vo;
 
-import com.deeptactback.deeptact_back.dto.OauthResponseDto;
+import com.deeptactback.deeptact_back.dto.OauthRespDto;
 import lombok.Builder;
 import lombok.Data;
 
@@ -11,7 +11,7 @@ public class OauthResponseVo {
     private String accessToken;
     private String refreshToken;
 
-    public static OauthResponseVo dtoToVo(OauthResponseDto dto) {
+    public static OauthResponseVo dtoToVo(OauthRespDto dto) {
         return OauthResponseVo.builder()
             .email(dto.getEmail())
             .nickname(dto.getNickname())

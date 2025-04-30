@@ -1,6 +1,7 @@
 package com.deeptactback.deeptact_back.vo;
 
-import com.deeptactback.deeptact_back.dto.UserLoginResponseDto;
+import com.deeptactback.deeptact_back.common.Role;
+import com.deeptactback.deeptact_back.dto.UserLoginRespDto;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -11,31 +12,28 @@ public class UserLoginResponseVo {
     private String accessToken;
     private String refreshToken;
     private String nickname;
-    private String email;
     private String profileImageUrl;
-    private String role;
+    private Role role;
     private String provider;
 
     @Builder
-    public UserLoginResponseVo(String accessToken, String refreshToken, String nickname, String email, String profileImageUrl, String role, String provider) {
+    public UserLoginResponseVo(String accessToken, String refreshToken, String nickname, String profileImageUrl, Role role, String provider) {
         this.accessToken = accessToken;
         this.refreshToken = refreshToken;
         this.nickname = nickname;
-        this.email = email;
         this.profileImageUrl = profileImageUrl;
         this.role = role;
         this.provider = provider;
     }
 
-    public static UserLoginResponseVo dtoToVo(UserLoginResponseDto userLoginResponseDto) {
+    public static UserLoginResponseVo dtoToVo(UserLoginRespDto userLoginRespDto) {
         return UserLoginResponseVo.builder()
-            .accessToken(userLoginResponseDto.getAccessToken())
-            .refreshToken(userLoginResponseDto.getRefreshToken())
-            .nickname(userLoginResponseDto.getNickname())
-            .email(userLoginResponseDto.getEmail())
-            .profileImageUrl(userLoginResponseDto.getProfileImageUrl())
-            .role(userLoginResponseDto.getRole())
-            .provider(userLoginResponseDto.getProvider())
+            .accessToken(userLoginRespDto.getAccessToken())
+            .refreshToken(userLoginRespDto.getRefreshToken())
+            .nickname(userLoginRespDto.getNickname())
+            .profileImageUrl(userLoginRespDto.getProfileImageUrl())
+            .role(userLoginRespDto.getRole())
+            .provider(userLoginRespDto.getProvider())
             .build();
     }
 }
