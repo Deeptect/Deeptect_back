@@ -2,7 +2,9 @@ package com.deeptactback.deeptact_back.vo;
 
 import com.deeptactback.deeptact_back.dto.LogRespDto;
 import lombok.Builder;
+import lombok.Data;
 
+@Data
 public class LogRespVo {
     private Boolean isDeepfake;
     private Float detectionScore;

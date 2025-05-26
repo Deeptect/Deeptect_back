@@ -53,7 +53,7 @@ public class Video {
     public Video(int videoId, DeepfakeAnalysisLog deepfakeAnalysisLog, OriginType originType, String youtubeVideoId, String description, int viewCount, int likeCount, LocalDateTime uploadedAt) {
         this.videoId = videoId;
         this.deepfakeAnalysisLog = deepfakeAnalysisLog;
-        this.originType = originType;
+        this.originType = originType != null ? originType : OriginType.USER;
         this.youtubeVideoId = youtubeVideoId;
         this.description = description;
         this.viewCount = viewCount;

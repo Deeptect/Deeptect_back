@@ -7,10 +7,13 @@ import com.deeptactback.deeptact_back.dto.ChgPasswordReqDto;
 import com.deeptactback.deeptact_back.dto.UserShowRespDto;
 import com.deeptactback.deeptact_back.dto.UserLoginRespDto;
 import com.deeptactback.deeptact_back.dto.UserReqDto;
+import com.deeptactback.deeptact_back.service.CloudflareR2Service;
 import com.deeptactback.deeptact_back.service.EmailService;
 import com.deeptactback.deeptact_back.service.UserService;
+import com.deeptactback.deeptact_back.vo.LogListRespVo;
 import com.deeptactback.deeptact_back.vo.UserShowResponseVo;
 import com.deeptactback.deeptact_back.vo.UserLoginResponseVo;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -27,6 +30,7 @@ public class UserController {
 
     private final UserService userService;
     private final EmailService emailService;
+    private final CloudflareR2Service cloudflareR2Service;
 
     // 회원가입 API
     // 입력값 : userRequestDto
@@ -124,5 +128,11 @@ public class UserController {
         catch (Exception e) {
             return CMResponse.fail(BaseResponseStatus.INTERNAL_SERVER_ERROR);
         }
+    }
+
+    @GetMapping("/logs")
+    public CMResponse<List<LogListRespVo>> getLogsByUser() {
+        List<LogListRespVo> logs = cloudflareR2Service.getUserLogs();
+        return CMResponse.success(BaseResponseStatus.SUCCESS, logs);
     }
 }

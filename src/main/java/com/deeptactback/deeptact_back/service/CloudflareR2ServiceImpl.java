@@ -9,6 +9,7 @@ import com.deeptactback.deeptact_back.dto.VideoUploadReqDto;
 import com.deeptactback.deeptact_back.repository.LogRepository;
 import com.deeptactback.deeptact_back.repository.UserRepository;
 import com.deeptactback.deeptact_back.repository.VideoRepository;
+import com.deeptactback.deeptact_back.vo.LogListRespVo;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
@@ -17,6 +18,7 @@ import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 
+import java.util.List;
 import java.util.Map;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -77,34 +79,17 @@ public class CloudflareR2ServiceImpl implements CloudflareR2Service {
 
     // 영상 업로드 시 판별된 영상만 업로드 가능하도록
     @Override
-    public String uploadVideo(String originalFilename, MultipartFile file, VideoUploadReqDto videoUploadReqDto) throws IOException {
+    public void uploadVideo(MultipartFile video, int logId, String description) throws IOException {
         try {
-            String timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMddHHmmss"));
-            String fileName = timestamp + "_" + originalFilename;
+            DeepfakeAnalysisLog deepfakeAnalysisLog = logRepository.findById(logId).get();
 
-            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-            String uuid = (String) authentication.getPrincipal();
-
-            User user = userRepository.findByUuid(uuid);
-
-            Video video = Video.builder()
-                .originType(OriginType.USER)
-                .description(videoUploadReqDto.getDescription())
+            Video uploadVideo = Video.builder()
+                .deepfakeAnalysisLog(deepfakeAnalysisLog)
+                .description(description)
                 .uploadedAt(LocalDateTime.now())
                 .build();
 
-            videoRepository.save(video);
-
-            PutObjectRequest putObjectRequest = PutObjectRequest.builder()
-                .bucket(bucketName)
-                .key(fileName)
-                .contentType(file.getContentType())
-                .contentLength(file.getSize())
-                .build();
-
-            r2Client.putObject(putObjectRequest, RequestBody.fromInputStream(file.getInputStream(), file.getSize()));
-
-            return fileName;
+            videoRepository.save(uploadVideo);
         } catch (S3Exception e) {
             throw new IOException("Cloudflare R2에 파일 업로드 실패: " + e.getMessage(), e);
         }
@@ -116,8 +101,10 @@ public class CloudflareR2ServiceImpl implements CloudflareR2Service {
         User user = userRepository.findByUuid(uuid);
 
         // ✅ Cloudflare R2 저장
-        String fileName = "video/" + uuid + "/" + URLEncoder.encode(title, StandardCharsets.UTF_8) + ".mp4";
+        String fileName = "video/" + uuid + "/" + title + ".mp4";
         String videoUrl = publicUrl + fileName;
+
+        System.out.println(fileName);
 
         PutObjectRequest putRequest = PutObjectRequest.builder()
             .bucket(bucketName)
@@ -176,6 +163,25 @@ public class CloudflareR2ServiceImpl implements CloudflareR2Service {
         public long contentLength() {
             return -1; // 알 수 없음 (streaming)
         }
+    }
+
+    public List<LogListRespVo> getUserLogs() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        String uuid = (String) authentication.getPrincipal();
+
+        User user = userRepository.findByUuid(uuid);
+        List<DeepfakeAnalysisLog> logs = logRepository.findAllByUser(user);
+
+        return logs.stream()
+            .map(log -> LogListRespVo.builder()
+                .logId(log.getLogId())
+                .title(log.getTitle())
+                .videoUrl(log.getVideoUrl())
+                .isDeepfake(log.getIsDeepfake())
+                .detectionScore(log.getDetectionScore())
+                .detectedAt(log.getDetectedAt())
+                .build())
+            .toList();
     }
 
 

@@ -59,7 +59,6 @@ public class YoutubeShortsFetchServiceImpl implements YoutubeShortsFetchService 
             String title = video.getSnippet().getTitle();
             String description = video.getSnippet().getDescription();
             String thumbnailUrl = video.getSnippet().getThumbnails().getDefault().getUrl();
-            LocalDateTime uploadTime = LocalDateTime.now();
 
             try {
                 String fileName = streamVideoDirectlyToR2(videoId, title);

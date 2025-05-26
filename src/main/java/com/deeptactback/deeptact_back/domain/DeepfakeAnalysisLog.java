@@ -39,10 +39,10 @@ public class DeepfakeAnalysisLog {
     @Column(nullable = false)
     private String analysisDetail;
 
-    @Column(nullable = false, length = 50)
+    @Column(nullable = false, length = 255)
     private String videoUrl;
 
-    @Column(nullable = false, length = 50)
+    @Column(nullable = false, length = 255)
     private String thumbnailUrl;
 
     @Column(nullable = false)

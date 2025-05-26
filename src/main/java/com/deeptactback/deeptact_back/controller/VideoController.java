@@ -43,7 +43,7 @@ public class VideoController {
         @RequestParam(defaultValue = "0") int page,
         @RequestParam(defaultValue = "10") int size) {
         try {
-            Pageable pageable = PageRequest.of(page, size, Sort.by("uploadTime").descending());
+            Pageable pageable = PageRequest.of(page, size, Sort.by("uploadedAt").descending());
             return CMResponse.success(BaseResponseStatus.SUCCESS, videoService.getAllVideos(pageable));
         } catch (BaseException e) {
             return CMResponse.fail(e.getErrorCode());
@@ -67,10 +67,13 @@ public class VideoController {
 
     // cloudflare 업로드
     @PostMapping(path = "/upload", consumes = {MediaType.MULTIPART_FORM_DATA_VALUE})
-    public CMResponse<String> uploadFile(@RequestParam("video") MultipartFile video, @RequestBody VideoUploadReqDto videoUploadReqDto){
+    public CMResponse<Void> uploadFile(
+        @RequestPart("video") MultipartFile video,
+        @RequestPart("logId") int logId,
+        @RequestPart("description") String description){
         try {
-            String fileName = cloudflareR2Service.uploadVideo(video.getOriginalFilename(), video, videoUploadReqDto);
-            return CMResponse.success(BaseResponseStatus.SUCCESS, fileName);
+            cloudflareR2Service.uploadVideo(video, logId, description);
+            return CMResponse.success(BaseResponseStatus.SUCCESS);
         } catch (BaseException e) {
             return CMResponse.fail(e.getErrorCode());
         }

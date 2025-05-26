@@ -15,10 +15,10 @@ public class VideoListRespDto {
     private OriginType originType;
     private String title;
     private String description;
-    private LocalDateTime uploadTime;
+    private LocalDateTime uploadedAt;
     private Boolean isDeepfake;
     private Float detectionScore;
-    private String storageUrl;
+    private String videoUrl;
     private String thumbnailUrl;
     private int viewCount;
     private int likeCount;
@@ -31,10 +31,10 @@ public class VideoListRespDto {
             .originType(video.getOriginType())
             .title(analysisLog.getTitle())
             .description(video.getDescription())
-            .uploadTime(video.getUploadedAt())
+            .uploadedAt(video.getUploadedAt())
             .isDeepfake(analysisLog.getIsDeepfake())
             .detectionScore(analysisLog.getDetectionScore())
-            .storageUrl(analysisLog.getVideoUrl())
+            .videoUrl(analysisLog.getVideoUrl())
             .thumbnailUrl(analysisLog.getThumbnailUrl())
             .viewCount(video.getViewCount())
             .likeCount(video.getLikeCount())
