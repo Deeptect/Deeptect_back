@@ -48,7 +48,8 @@ public class SecurityConfig {
                     "/api/v1/user/register",
                     "/api/v1/user/login",
                     "/api/v1/video/fetch-shorts",
-                    "/api/v1/video/*" // 수정필요
+                    "/api/v1/video/videos", // 수정필요
+                    "/api/v1/video/analysis"
                 )
                 .permitAll()
                 .anyRequest().authenticated())
