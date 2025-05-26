@@ -1,6 +1,5 @@
 package com.deeptactback.deeptact_back.dto;
 
-import com.deeptactback.deeptact_back.common.IsDeepfake;
 import com.deeptactback.deeptact_back.common.OriginType;
 import com.deeptactback.deeptact_back.domain.Video;
 import java.time.LocalDateTime;

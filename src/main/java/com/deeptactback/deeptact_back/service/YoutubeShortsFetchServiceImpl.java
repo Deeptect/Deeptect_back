@@ -1,6 +1,5 @@
 package com.deeptactback.deeptact_back.service;
 
-import com.deeptactback.deeptact_back.common.IsDeepfake;
 import com.deeptactback.deeptact_back.common.OriginType;
 import com.deeptactback.deeptact_back.domain.User;
 import com.deeptactback.deeptact_back.domain.Video;
@@ -68,16 +67,9 @@ public class YoutubeShortsFetchServiceImpl implements YoutubeShortsFetchService 
                     String storageUrl = publicUrl + fileName;
 
                     Video entity = Video.builder()
-                        .user(user)
                         .originType(OriginType.ADMIN)
                         .youtubeVideoId(videoId)
-                        .title(title)
                         .description(description)
-                        .uploadTime(uploadTime)
-                        .storageUrl(storageUrl)
-                        .thumbnailUrl(thumbnailUrl)
-                        .isDeepfake(IsDeepfake.N)
-                        .detectionScore(0)
                         .build();
 
                     videoRepository.save(entity);

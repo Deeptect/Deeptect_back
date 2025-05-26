@@ -1,6 +1,5 @@
 package com.deeptactback.deeptact_back.vo;
 
-import com.deeptactback.deeptact_back.common.IsDeepfake;
 import com.deeptactback.deeptact_back.common.OriginType;
 import com.deeptactback.deeptact_back.dto.VideoShowRespDto;
 import java.time.LocalDateTime;
@@ -17,12 +16,12 @@ public class VideoShowRespVo {
     private LocalDateTime uploadTime;
     private String storageUrl;
     private String thumbnailUrl;
-    private IsDeepfake isDeepfake;
+    private Boolean isDeepfake;
     private int viewCount;
     private int likeCount;
 
     @Builder
-    public VideoShowRespVo(OriginType originType, String title, String description, LocalDateTime uploadTime, String storageUrl, String thumbnailUrl, IsDeepfake isDeepfake, int viewCount, int likeCount) {
+    public VideoShowRespVo(OriginType originType, String title, String description, LocalDateTime uploadTime, String storageUrl, String thumbnailUrl, Boolean isDeepfake, int viewCount, int likeCount) {
         this.originType = originType;
         this.title = title;
         this.description = description;

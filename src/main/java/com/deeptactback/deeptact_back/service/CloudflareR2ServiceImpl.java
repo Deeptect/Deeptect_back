@@ -1,24 +1,36 @@
 package com.deeptactback.deeptact_back.service;
 
-import com.deeptactback.deeptact_back.common.IsDeepfake;
 import com.deeptactback.deeptact_back.common.OriginType;
+import com.deeptactback.deeptact_back.domain.DeepfakeAnalysisLog;
 import com.deeptactback.deeptact_back.domain.User;
 import com.deeptactback.deeptact_back.domain.Video;
+import com.deeptactback.deeptact_back.dto.LogRespDto;
 import com.deeptactback.deeptact_back.dto.VideoUploadReqDto;
+import com.deeptactback.deeptact_back.repository.LogRepository;
 import com.deeptactback.deeptact_back.repository.UserRepository;
 import com.deeptactback.deeptact_back.repository.VideoRepository;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 
+import java.util.Map;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.cglib.core.Local;
+import org.springframework.core.io.InputStreamResource;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
+import org.springframework.util.LinkedMultiValueMap;
+import org.springframework.util.MultiValueMap;
+import org.springframework.web.client.RestTemplate;
 import org.springframework.web.multipart.MultipartFile;
 
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
@@ -39,15 +51,17 @@ public class CloudflareR2ServiceImpl implements CloudflareR2Service {
     private final String bucketName;
     private final VideoRepository videoRepository;
     private final UserRepository userRepository;
+    private final LogRepository logRepository;
 
     public CloudflareR2ServiceImpl(
         @Value("${cloudflare.r2.access-key-id}") String accessKeyId,
         @Value("${cloudflare.r2.secret-access-key}") String secretAccessKey,
         @Value("${cloudflare.r2.endpoint}") String endpoint,
         @Value("${cloudflare.r2.bucket-name}") String bucketName, VideoRepository videoRepository,
-        UserRepository userRepository) {
+        UserRepository userRepository, LogRepository logRepository) {
         this.videoRepository = videoRepository;
         this.userRepository = userRepository;
+        this.logRepository = logRepository;
 
         this.r2Client = S3Client.builder()
             .region(Region.US_EAST_1)
@@ -59,6 +73,9 @@ public class CloudflareR2ServiceImpl implements CloudflareR2Service {
         this.bucketName = bucketName;
     }
 
+
+
+    // 영상 업로드 시 판별된 영상만 업로드 가능하도록
     @Override
     public String uploadVideo(String originalFilename, MultipartFile file, VideoUploadReqDto videoUploadReqDto) throws IOException {
         try {
@@ -71,16 +88,9 @@ public class CloudflareR2ServiceImpl implements CloudflareR2Service {
             User user = userRepository.findByUuid(uuid);
 
             Video video = Video.builder()
-                .user(user)
                 .originType(OriginType.USER)
-                .title(videoUploadReqDto.getTitle())
                 .description(videoUploadReqDto.getDescription())
-                .uploadTime(LocalDateTime.now())
-                .storageUrl(publicUrl + fileName)
-                .thumbnailUrl(videoUploadReqDto.getThumbnailUrl())
-                .isDeepfake(null) // 추후 변경 필요
-                .detectionScore(0) // 추후 변경 필요
-                .detectionTime(null) // 추후 변경 필요
+                .uploadedAt(LocalDateTime.now())
                 .build();
 
             videoRepository.save(video);
@@ -100,6 +110,75 @@ public class CloudflareR2ServiceImpl implements CloudflareR2Service {
         }
     }
 
+    public LogRespDto analyzeVideo(MultipartFile video, String title) throws IOException {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        String uuid = (String) auth.getPrincipal();
+        User user = userRepository.findByUuid(uuid);
+
+        // ✅ Cloudflare R2 저장
+        String fileName = "video/" + uuid + "/" + URLEncoder.encode(title, StandardCharsets.UTF_8) + ".mp4";
+        String videoUrl = publicUrl + fileName;
+
+        PutObjectRequest putRequest = PutObjectRequest.builder()
+            .bucket(bucketName)
+            .key(fileName)
+            .contentType(video.getContentType())
+            .contentLength(video.getSize())
+            .build();
+        r2Client.putObject(putRequest, RequestBody.fromInputStream(video.getInputStream(), video.getSize()));
+
+        // ✅ 영상 분석 요청 (파일 직접 전송)
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.MULTIPART_FORM_DATA);
+
+        MultiValueMap<String, Object> body = new LinkedMultiValueMap<>();
+        body.add("video", new MultipartInputStreamFileResource(video.getInputStream(), video.getOriginalFilename()));
+        body.add("title", title);
+
+        HttpEntity<MultiValueMap<String, Object>> request = new HttpEntity<>(body, headers);
+        RestTemplate restTemplate = new RestTemplate();
+
+        ResponseEntity<Map> response = restTemplate.postForEntity("http://localhost:8000/predict-direct", request, Map.class);
+        Map<String, Object> result = response.getBody();
+
+        boolean isDeepfake = ((Integer) result.get("prediction")) == 1;
+        float score = ((Number) result.get("probability")).floatValue();
+
+        // ✅ 로그 저장
+        DeepfakeAnalysisLog log = DeepfakeAnalysisLog.builder()
+            .user(user)
+            .title(title)
+            .isDeepfake(isDeepfake ? "TRUE" : "FALSE")
+            .detectionScore(score * 100)
+            .analysisDetail("분석 완료")
+            .videoUrl(videoUrl)  // Cloudflare 저장 URL
+            .thumbnailUrl("")    // 나중에 썸네일 추가 가능
+            .build();
+
+        logRepository.save(log);
+        return LogRespDto.entityToDto(isDeepfake, score);
+    }
+
+    public class MultipartInputStreamFileResource extends InputStreamResource {
+        private final String filename;
+
+        public MultipartInputStreamFileResource(InputStream inputStream, String filename) {
+            super(inputStream);
+            this.filename = filename;
+        }
+
+        @Override
+        public String getFilename() {
+            return this.filename;
+        }
+
+        @Override
+        public long contentLength() {
+            return -1; // 알 수 없음 (streaming)
+        }
+    }
+
+
     @Override
     public String uploadShortsVideo(String originalFilename, MultipartFile file, VideoUploadReqDto videoUploadReqDto) throws IOException {
         try {
@@ -116,17 +195,9 @@ public class CloudflareR2ServiceImpl implements CloudflareR2Service {
             }
 
             Video video = Video.builder()
-                .user(user)
                 .originType(OriginType.ADMIN)
                 .youtubeVideoId(youtubeVideoId)
-                .title(videoUploadReqDto.getTitle())
                 .description(videoUploadReqDto.getDescription())
-                .uploadTime(LocalDateTime.now())
-                .storageUrl(publicUrl + fileName)
-                .thumbnailUrl(videoUploadReqDto.getThumbnailUrl())
-                .isDeepfake(null)
-                .detectionScore(0)
-                .detectionTime(null)
                 .build();
 
             videoRepository.save(video);
