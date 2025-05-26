@@ -21,6 +21,6 @@ public class VideoServiceImpl implements VideoService {
     @Override
     public Page<VideoListRespDto> getAllVideos(Pageable pageable) {
         return videoRepository.findAll(pageable)
-            .map(VideoListRespDto::entityToDto);
+            .map(video -> VideoListRespDto.entityToDto(video, video.getDeepfakeAnalysisLog()));
     }
 }

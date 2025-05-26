@@ -148,7 +148,7 @@ public class CloudflareR2ServiceImpl implements CloudflareR2Service {
         DeepfakeAnalysisLog log = DeepfakeAnalysisLog.builder()
             .user(user)
             .title(title)
-            .isDeepfake(isDeepfake ? "TRUE" : "FALSE")
+            .isDeepfake(isDeepfake)
             .detectionScore(score * 100)
             .analysisDetail("분석 완료")
             .videoUrl(videoUrl)  // Cloudflare 저장 URL

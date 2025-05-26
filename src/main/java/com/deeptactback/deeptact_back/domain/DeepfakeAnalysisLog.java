@@ -30,7 +30,7 @@ public class DeepfakeAnalysisLog {
     private String title;
 
     @Column(nullable = false)
-    private String isDeepfake;
+    private Boolean isDeepfake;
 
     @Column(nullable = false)
     private float detectionScore;
@@ -49,7 +49,7 @@ public class DeepfakeAnalysisLog {
     private LocalDateTime detectedAt;
 
     @Builder
-    public DeepfakeAnalysisLog(int logId, User user, String title, String isDeepfake, float detectionScore, String analysisDetail, String videoUrl, String thumbnailUrl) {
+    public DeepfakeAnalysisLog(int logId, User user, String title, Boolean isDeepfake, float detectionScore, String analysisDetail, String videoUrl, String thumbnailUrl) {
         this.logId = logId;
         this.user = user;
         this.title = title;
