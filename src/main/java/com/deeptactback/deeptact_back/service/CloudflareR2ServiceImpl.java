@@ -17,6 +17,7 @@ import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.io.ByteArrayInputStream;
 
 import java.util.List;
 import java.util.Map;
@@ -96,12 +97,12 @@ public class CloudflareR2ServiceImpl implements CloudflareR2Service {
     }
 
     public LogRespDto analyzeVideo(MultipartFile video, String title) throws IOException {
-        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        String uuid = (String) auth.getPrincipal();
-        User user = userRepository.findByUuid(uuid);
+        // Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        // String uuid = (String) auth.getPrincipal();
+        User user = userRepository.findByUuid("93c69287-d6f6-44cd-b948-d33158daf5fb");
 
         // ✅ Cloudflare R2 저장
-        String fileName = "video/" + uuid + "/" + title + ".mp4";
+        String fileName = "video/" + "93c69287-d6f6-44cd-b948-d33158daf5fb" + "/" + title + ".mp4";
         String videoUrl = publicUrl + fileName;
 
         System.out.println(fileName);
@@ -114,37 +115,50 @@ public class CloudflareR2ServiceImpl implements CloudflareR2Service {
             .build();
         r2Client.putObject(putRequest, RequestBody.fromInputStream(video.getInputStream(), video.getSize()));
 
-        // ✅ 영상 분석 요청 (파일 직접 전송)
+        byte[] videoBytes = video.getBytes();
+
+        // ✅ Deep 모델 분석 요청
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.MULTIPART_FORM_DATA);
 
-        MultiValueMap<String, Object> body = new LinkedMultiValueMap<>();
-        body.add("video", new MultipartInputStreamFileResource(video.getInputStream(), video.getOriginalFilename()));
-        body.add("title", title);
+        MultiValueMap<String, Object> bodyDirect = new LinkedMultiValueMap<>();
+        bodyDirect.add("video", new MultipartInputStreamFileResource(new ByteArrayInputStream(videoBytes), video.getOriginalFilename()));
+        HttpEntity<MultiValueMap<String, Object>> requestDirect = new HttpEntity<>(bodyDirect, headers);
 
-        HttpEntity<MultiValueMap<String, Object>> request = new HttpEntity<>(body, headers);
         RestTemplate restTemplate = new RestTemplate();
+        ResponseEntity<Map> responseDirect = restTemplate.postForEntity("http://localhost:8000/predict-deep", requestDirect, Map.class);
+        Map<String, Object> resultDirect = responseDirect.getBody();
 
-        ResponseEntity<Map> response = restTemplate.postForEntity("http://localhost:8000/predict-direct", request, Map.class);
-        Map<String, Object> result = response.getBody();
+        // ✅ Attention 모델 분석 요청
+        MultiValueMap<String, Object> bodyAtt = new LinkedMultiValueMap<>();
+        bodyAtt.add("video", new MultipartInputStreamFileResource(new ByteArrayInputStream(videoBytes), video.getOriginalFilename()));
+        HttpEntity<MultiValueMap<String, Object>> requestAtt = new HttpEntity<>(bodyAtt, headers);
+        ResponseEntity<Map> responseAtt = restTemplate.postForEntity("http://localhost:8000/predict-att", requestAtt, Map.class);
+        Map<String, Object> resultAtt = responseAtt.getBody();
 
-        boolean isDeepfake = ((Integer) result.get("prediction")) == 1;
-        float score = ((Number) result.get("probability")).floatValue();
+        // ✅ 결과 파싱 (null 방지)
+        boolean isDeepfakeDirect = resultDirect != null && resultDirect.get("prediction") != null && ((Integer) resultDirect.get("prediction")) == 1;
+        float scoreDirect = resultDirect != null && resultDirect.get("probability") != null ? ((Number) resultDirect.get("probability")).floatValue() : -1f;
+
+        boolean isDeepfakeAttention = resultAtt != null && resultAtt.get("prediction") != null && ((Integer) resultAtt.get("prediction")) == 1;
+        float scoreAttention = resultAtt != null && resultAtt.get("deepfake_prob") != null ? ((Number) resultAtt.get("deepfake_prob")).floatValue() : -1f;
 
         // ✅ 로그 저장
         DeepfakeAnalysisLog log = DeepfakeAnalysisLog.builder()
             .user(user)
             .title(title)
-            .isDeepfake(isDeepfake)
-            .detectionScore(score * 100)
+            .isDeepfake(isDeepfakeDirect || isDeepfakeAttention)
+            .detectionScore(Math.max(scoreDirect, scoreAttention) * 100)
             .analysisDetail("분석 완료")
-            .videoUrl(videoUrl)  // Cloudflare 저장 URL
-            .thumbnailUrl("")    // 나중에 썸네일 추가 가능
+            .videoUrl(videoUrl)
+            .thumbnailUrl("")
             .build();
 
         logRepository.save(log);
-        return LogRespDto.entityToDto(isDeepfake, score);
+        return LogRespDto.entityToDto(isDeepfakeDirect, scoreDirect, isDeepfakeAttention, scoreAttention);
     }
+
+
 
     public class MultipartInputStreamFileResource extends InputStreamResource {
         private final String filename;

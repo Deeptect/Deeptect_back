@@ -6,19 +6,25 @@ import lombok.Data;
 
 @Data
 public class LogRespVo {
-    private Boolean isDeepfake;
-    private Float detectionScore;
+    private Boolean isDeepfakeDirect;
+    private Float scoreDirect;
+    private Boolean isDeepfakeAttention;
+    private Float scoreAttention;
 
     @Builder
-    public LogRespVo(Boolean isDeepfake, Float detectionScore) {
-        this.isDeepfake = isDeepfake;
-        this.detectionScore = detectionScore;
+    public LogRespVo(Boolean isDeepfakeDirect, Float scoreDirect, Boolean isDeepfakeAttention, Float scoreAttention) {
+        this.isDeepfakeDirect = isDeepfakeDirect;
+        this.scoreDirect = scoreDirect;
+        this.isDeepfakeAttention = isDeepfakeAttention;
+        this.scoreAttention = scoreAttention;
     }
 
     public static LogRespVo dtoToVo(LogRespDto logRespDto) {
         return LogRespVo.builder()
-            .isDeepfake(logRespDto.getIsDeepfake())
-            .detectionScore(logRespDto.getDetectionScore())
+            .isDeepfakeDirect(logRespDto.getIsDeepfakeDirect())
+            .scoreDirect(logRespDto.getScoreDirect())
+            .isDeepfakeAttention(logRespDto.getIsDeepfakeAttention())
+            .scoreAttention(logRespDto.getScoreAttention())
             .build();
     }
 }
