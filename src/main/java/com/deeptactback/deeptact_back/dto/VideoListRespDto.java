@@ -1,7 +1,7 @@
 package com.deeptactback.deeptact_back.dto;
 
-import com.deeptactback.deeptact_back.common.IsDeepfake;
 import com.deeptactback.deeptact_back.common.OriginType;
+import com.deeptactback.deeptact_back.domain.DeepfakeAnalysisLog;
 import com.deeptactback.deeptact_back.domain.Video;
 import java.time.LocalDateTime;
 import lombok.Builder;
@@ -15,27 +15,27 @@ public class VideoListRespDto {
     private OriginType originType;
     private String title;
     private String description;
-    private LocalDateTime uploadTime;
-    private IsDeepfake isDeepfake;
+    private LocalDateTime uploadedAt;
+    private Boolean isDeepfake;
     private Float detectionScore;
-    private String storageUrl;
+    private String videoUrl;
     private String thumbnailUrl;
     private int viewCount;
     private int likeCount;
 
-    public static VideoListRespDto entityToDto(Video video) {
+    public static VideoListRespDto entityToDto(Video video, DeepfakeAnalysisLog analysisLog) {
         return VideoListRespDto.builder()
             .videoId(video.getVideoId())
             .nickname(
-                video.getUser() != null && video.getUser().getNickname() != null ? video.getUser().getNickname() : "ADMIN")
+                analysisLog.getUser() != null && analysisLog.getUser().getNickname() != null ? analysisLog.getUser().getNickname() : "ADMIN")
             .originType(video.getOriginType())
-            .title(video.getTitle())
+            .title(analysisLog.getTitle())
             .description(video.getDescription())
-            .uploadTime(video.getUploadTime())
-            .isDeepfake(video.getIsDeepfake())
-            .detectionScore(video.getDetectionScore())
-            .storageUrl(video.getStorageUrl())
-            .thumbnailUrl(video.getThumbnailUrl())
+            .uploadedAt(video.getUploadedAt())
+            .isDeepfake(analysisLog.getIsDeepfake())
+            .detectionScore(analysisLog.getDetectionScore())
+            .videoUrl(analysisLog.getVideoUrl())
+            .thumbnailUrl(analysisLog.getThumbnailUrl())
             .viewCount(video.getViewCount())
             .likeCount(video.getLikeCount())
             .build();

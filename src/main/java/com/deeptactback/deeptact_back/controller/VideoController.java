@@ -3,13 +3,13 @@ package com.deeptactback.deeptact_back.controller;
 import com.deeptactback.deeptact_back.common.BaseException;
 import com.deeptactback.deeptact_back.common.BaseResponseStatus;
 import com.deeptactback.deeptact_back.common.CMResponse;
+import com.deeptactback.deeptact_back.dto.LogRespDto;
 import com.deeptactback.deeptact_back.dto.VideoListRespDto;
-import com.deeptactback.deeptact_back.dto.VideoShowRespDto;
 import com.deeptactback.deeptact_back.dto.VideoUploadReqDto;
 import com.deeptactback.deeptact_back.service.CloudflareR2Service;
 import com.deeptactback.deeptact_back.service.VideoService;
 import com.deeptactback.deeptact_back.service.YoutubeShortsFetchService;
-import com.deeptactback.deeptact_back.vo.VideoShowRespVo;
+import com.deeptactback.deeptact_back.vo.LogRespVo;
 import java.io.IOException;
 import java.io.InputStream;
 import java.security.GeneralSecurityException;
@@ -43,20 +43,37 @@ public class VideoController {
         @RequestParam(defaultValue = "0") int page,
         @RequestParam(defaultValue = "10") int size) {
         try {
-            Pageable pageable = PageRequest.of(page, size, Sort.by("uploadTime").descending());
+            Pageable pageable = PageRequest.of(page, size, Sort.by("uploadedAt").descending());
             return CMResponse.success(BaseResponseStatus.SUCCESS, videoService.getAllVideos(pageable));
         } catch (BaseException e) {
             return CMResponse.fail(e.getErrorCode());
         }
     }
 
+    @PostMapping(path = "/analysis", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public CMResponse<LogRespVo> analysisVideo(
+        @RequestPart("video") MultipartFile video,
+        @RequestPart("title") String title) {
+        try {
+            LogRespDto logRespDto = cloudflareR2Service.analyzeVideo(video, title);
+            LogRespVo logRespVo = LogRespVo.dtoToVo(logRespDto);
+            return CMResponse.success(BaseResponseStatus.SUCCESS, logRespVo);
+        } catch (BaseException e) {
+            return CMResponse.fail(e.getErrorCode());
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
 
     // cloudflare 업로드
     @PostMapping(path = "/upload", consumes = {MediaType.MULTIPART_FORM_DATA_VALUE})
-    public CMResponse<String> uploadFile(@RequestParam("video") MultipartFile video, @RequestBody VideoUploadReqDto videoUploadReqDto){
+    public CMResponse<Void> uploadFile(
+        @RequestPart("video") MultipartFile video,
+        @RequestPart("logId") int logId,
+        @RequestPart("description") String description){
         try {
-            String fileName = cloudflareR2Service.uploadVideo(video.getOriginalFilename(), video, videoUploadReqDto);
-            return CMResponse.success(BaseResponseStatus.SUCCESS, fileName);
+            cloudflareR2Service.uploadVideo(video, logId, description);
+            return CMResponse.success(BaseResponseStatus.SUCCESS);
         } catch (BaseException e) {
             return CMResponse.fail(e.getErrorCode());
         }

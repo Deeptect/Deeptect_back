@@ -1,6 +1,5 @@
 package com.deeptactback.deeptact_back.vo;
 
-import com.deeptactback.deeptact_back.common.IsDeepfake;
 import com.deeptactback.deeptact_back.common.OriginType;
 import com.deeptactback.deeptact_back.dto.VideoShowRespDto;
 import java.time.LocalDateTime;
@@ -14,20 +13,20 @@ public class VideoShowRespVo {
     private OriginType originType;
     private String title;
     private String description;
-    private LocalDateTime uploadTime;
-    private String storageUrl;
+    private LocalDateTime uploadedAt;
+    private String videoUrl;
     private String thumbnailUrl;
-    private IsDeepfake isDeepfake;
+    private Boolean isDeepfake;
     private int viewCount;
     private int likeCount;
 
     @Builder
-    public VideoShowRespVo(OriginType originType, String title, String description, LocalDateTime uploadTime, String storageUrl, String thumbnailUrl, IsDeepfake isDeepfake, int viewCount, int likeCount) {
+    public VideoShowRespVo(OriginType originType, String title, String description, LocalDateTime uploadedAt, String videoUrl, String thumbnailUrl, Boolean isDeepfake, int viewCount, int likeCount) {
         this.originType = originType;
         this.title = title;
         this.description = description;
-        this.uploadTime = uploadTime;
-        this.storageUrl = storageUrl;
+        this.uploadedAt = uploadedAt;
+        this.videoUrl = videoUrl;
         this.thumbnailUrl = thumbnailUrl;
         this.isDeepfake = isDeepfake;
         this.viewCount = viewCount;
@@ -40,8 +39,8 @@ public class VideoShowRespVo {
             .originType(videoShowRespDto.getOriginType())
             .title(videoShowRespDto.getTitle())
             .description(videoShowRespDto.getDescription())
-            .uploadTime(videoShowRespDto.getUploadTime())
-            .storageUrl(videoShowRespDto.getStorageUrl())
+            .uploadedAt(videoShowRespDto.getUploadedAt())
+            .videoUrl(videoShowRespDto.getVideoUrl())
             .thumbnailUrl(videoShowRespDto.getThumbnailUrl())
             .isDeepfake(videoShowRespDto.getIsDeepfake())
             .viewCount(videoShowRespDto.getViewCount())

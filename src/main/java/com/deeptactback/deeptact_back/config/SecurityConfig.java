@@ -48,7 +48,8 @@ public class SecurityConfig {
                     "/api/v1/user/register",
                     "/api/v1/user/login",
                     "/api/v1/video/fetch-shorts",
-                    "/api/v1/video/videos"
+                    "/api/v1/video/videos", // 수정필요
+                    "/api/v1/video/analysis"
                 )
                 .permitAll()
                 .anyRequest().authenticated())
@@ -61,10 +62,10 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.addAllowedOrigin("http://localhost:5173"); // 원하는 출처를 추가
+        configuration.addAllowedOrigin("*");
         configuration.addAllowedMethod("*");
         configuration.addAllowedHeader("*");
-        configuration.setExposedHeaders(List.of("Authorization")); // 응답에서 노출할 헤더 추가
+        configuration.setExposedHeaders(List.of("Authorization"));
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration);

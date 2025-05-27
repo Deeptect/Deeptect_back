@@ -1,6 +1,5 @@
 package com.deeptactback.deeptact_back.dto;
 
-import com.deeptactback.deeptact_back.common.IsDeepfake;
 import com.deeptactback.deeptact_back.common.OriginType;
 import java.time.LocalDateTime;
 import lombok.Builder;
@@ -12,21 +11,21 @@ public class VideoShowRespDto {
     private OriginType originType;
     private String title;
     private String description;
-    private LocalDateTime uploadTime;
-    private String storageUrl;
+    private LocalDateTime uploadedAt;
+    private String videoUrl;
     private String thumbnailUrl;
-    private IsDeepfake isDeepfake;
+    private Boolean isDeepfake;
     private int viewCount;
     private int likeCount;
 
-    public static VideoShowRespDto entityToDto(OriginType originType, String title, String description, LocalDateTime uploadTime, String storageUrl,
-        String thumbnailUrl, IsDeepfake isDeepfake, int viewCount, int likeCount) {
+    public static VideoShowRespDto entityToDto(OriginType originType, String title, String description, LocalDateTime uploadedAt, String videoUrl,
+        String thumbnailUrl, Boolean isDeepfake, int viewCount, int likeCount) {
         return VideoShowRespDto.builder()
             .originType(originType)
             .title(title)
             .description(description)
-            .uploadTime(uploadTime)
-            .storageUrl(storageUrl)
+            .uploadedAt(uploadedAt)
+            .videoUrl(videoUrl)
             .thumbnailUrl(thumbnailUrl)
             .isDeepfake(isDeepfake)
             .viewCount(viewCount)
