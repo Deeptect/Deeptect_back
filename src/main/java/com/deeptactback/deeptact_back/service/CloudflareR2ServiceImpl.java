@@ -76,46 +76,77 @@ public class CloudflareR2ServiceImpl implements CloudflareR2Service {
         this.bucketName = bucketName;
     }
 
-
-
-    // 영상 업로드 시 판별된 영상만 업로드 가능하도록
     @Override
-    public void uploadVideo(MultipartFile video, int logId, String description) throws IOException {
-        try {
-            DeepfakeAnalysisLog deepfakeAnalysisLog = logRepository.findById(logId).get();
+    public void uploadVideo(MultipartFile video, String title, String description, Boolean isDeepfake, Float detectionScore) throws IOException {
+    try {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        String uuid = (String) auth.getPrincipal();
+        User user = userRepository.findByUuid(uuid);
 
-            Video uploadVideo = Video.builder()
-                .deepfakeAnalysisLog(deepfakeAnalysisLog)
-                .description(description)
-                .uploadedAt(LocalDateTime.now())
-                .build();
+        // 🔸 timestamp + 안전한 파일명 생성
+        String timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss"));
+        String baseName = title + "_" + timestamp;
+        String videoKey = "video/" + uuid + "/" + baseName + ".mp4";
+        String thumbnailKey = "video/" + uuid + "/" + baseName + "_thumb.jpg";
 
-            videoRepository.save(uploadVideo);
-        } catch (S3Exception e) {
-            throw new IOException("Cloudflare R2에 파일 업로드 실패: " + e.getMessage(), e);
-        }
-    }
+        String videoUrl = publicUrl + videoKey;
+        String thumbnailUrl = publicUrl + thumbnailKey;
 
-    public LogRespDto analyzeVideo(MultipartFile video, String title) throws IOException {
-        // Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        // String uuid = (String) auth.getPrincipal();
-        User user = userRepository.findByUuid("93c69287-d6f6-44cd-b948-d33158daf5fb");
-
-        // ✅ Cloudflare R2 저장
-        String fileName = "video/" + "93c69287-d6f6-44cd-b948-d33158daf5fb" + "/" + title + ".mp4";
-        String videoUrl = publicUrl + fileName;
-
-        System.out.println(fileName);
-
-        PutObjectRequest putRequest = PutObjectRequest.builder()
+        // ✅ Cloudflare R2 - 영상 업로드
+        PutObjectRequest videoPutRequest = PutObjectRequest.builder()
             .bucket(bucketName)
-            .key(fileName)
+            .key(videoKey)
             .contentType(video.getContentType())
             .contentLength(video.getSize())
             .build();
-        r2Client.putObject(putRequest, RequestBody.fromInputStream(video.getInputStream(), video.getSize()));
 
-        byte[] videoBytes = video.getBytes();
+        r2Client.putObject(videoPutRequest, RequestBody.fromInputStream(video.getInputStream(), video.getSize()));
+
+        // ✅ 썸네일 생성: 임시 파일 저장 → ffmpeg 실행
+        File tempVideo = File.createTempFile("upload_", ".mp4");
+        video.transferTo(tempVideo);
+
+        File thumbnailFile = new File(tempVideo.getParent(), baseName + "_thumb.jpg");
+
+        ProcessBuilder pb = new ProcessBuilder(
+            "ffmpeg", "-i", tempVideo.getAbsolutePath(), "-ss", "00:00:05", "-vframes", "1", thumbnailFile.getAbsolutePath()
+        );
+
+        pb.redirectErrorStream(true);
+        Process process = pb.start();
+        process.waitFor();
+
+        // ✅ 썸네일 업로드
+        PutObjectRequest thumbPutRequest = PutObjectRequest.builder()
+            .bucket(bucketName)
+            .key(thumbnailKey)
+            .contentType("image/jpeg")
+            .contentLength(thumbnailFile.length())
+            .build();
+
+        r2Client.putObject(thumbPutRequest, RequestBody.fromFile(thumbnailFile));
+
+        Test testVideo = Test.builder()
+            .user(user)
+            .title(title)
+            .isDeepfake(isDeepfake)
+            .detectionScore(detectionScore)
+            .videoUrl(videoUrl)
+            .thumbnailUrl(thumbnailUrl)
+            .uploadedAt(LocalDateTime.now())
+            .build();
+
+        testRepository.save(testVideo);
+
+        tempVideo.delete();
+        thumbnailFile.delete();
+
+    } catch (S3Exception | InterruptedException e) {
+        throw new IOException("Cloudflare R2 업로드 또는 썸네일 생성 실패: " + e.getMessage(), e);
+    }
+}
+
+    public LogRespDto analyzeVideo(MultipartFile video) throws IOException {
 
         // ✅ Deep 모델 분석 요청
         HttpHeaders headers = new HttpHeaders();
@@ -126,7 +157,7 @@ public class CloudflareR2ServiceImpl implements CloudflareR2Service {
         HttpEntity<MultiValueMap<String, Object>> requestDirect = new HttpEntity<>(bodyDirect, headers);
 
         RestTemplate restTemplate = new RestTemplate();
-        ResponseEntity<Map> responseDirect = restTemplate.postForEntity("http://localhost:8000/predict-deep", requestDirect, Map.class);
+        ResponseEntity<Map> responseDirect = restTemplate.postForEntity("http://localhost:5000/predict-deep", requestDirect, Map.class);
         Map<String, Object> resultDirect = responseDirect.getBody();
 
         // ✅ Attention 모델 분석 요청
@@ -144,17 +175,17 @@ public class CloudflareR2ServiceImpl implements CloudflareR2Service {
         float scoreAttention = resultAtt != null && resultAtt.get("deepfake_prob") != null ? ((Number) resultAtt.get("deepfake_prob")).floatValue() : -1f;
 
         // ✅ 로그 저장
-        DeepfakeAnalysisLog log = DeepfakeAnalysisLog.builder()
-            .user(user)
-            .title(title)
-            .isDeepfake(isDeepfakeDirect || isDeepfakeAttention)
-            .detectionScore(Math.max(scoreDirect, scoreAttention) * 100)
-            .analysisDetail("분석 완료")
-            .videoUrl(videoUrl)
-            .thumbnailUrl("")
-            .build();
+        // DeepfakeAnalysisLog log = DeepfakeAnalysisLog.builder()
+        //     .user(user)
+        //     .title(title)
+        //     .isDeepfake(isDeepfakeDirect || isDeepfakeAttention)
+        //     .detectionScore(Math.max(scoreDirect, scoreAttention) * 100)
+        //     .analysisDetail("분석 완료")
+        //     .videoUrl(videoUrl)
+        //     .thumbnailUrl("")
+        //     .build();
 
-        logRepository.save(log);
+        // logRepository.save(log);
         return LogRespDto.entityToDto(isDeepfakeDirect, scoreDirect, isDeepfakeAttention, scoreAttention);
     }
 

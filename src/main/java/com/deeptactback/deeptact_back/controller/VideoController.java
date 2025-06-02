@@ -65,14 +65,16 @@ public class VideoController {
         }
     }
 
-    // cloudflare 업로드
+    // 업로드
     @PostMapping(path = "/upload", consumes = {MediaType.MULTIPART_FORM_DATA_VALUE})
     public CMResponse<Void> uploadFile(
         @RequestPart("video") MultipartFile video,
-        @RequestPart("logId") int logId,
-        @RequestPart("description") String description){
+        @RequestPart("title") String title,
+        @RequestPart("description") String description,
+        @RequestPart("isDeepfake") Boolean isDeepfake,  
+        @RequestPart("detectionScore") Float detectionScore){
         try {
-            cloudflareR2Service.uploadVideo(video, logId, description);
+            cloudflareR2Service.uploadVideo(video, title, description, isDeepfake, detectionScore);
             return CMResponse.success(BaseResponseStatus.SUCCESS);
         } catch (BaseException e) {
             return CMResponse.fail(e.getErrorCode());

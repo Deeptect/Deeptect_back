@@ -10,8 +10,9 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.web.multipart.MultipartFile;
 
 public interface CloudflareR2Service {
-    void uploadVideo(MultipartFile video, int logId, String description) throws IOException;
-    LogRespDto analyzeVideo(MultipartFile file, String title) throws IOException;
+    void uploadVideo(MultipartFile video, String title, String description, Boolean isDeepfake, Float detectionScore) throws IOException;
+    // void uploadVideo(MultipartFile video, int logId, String description) throws IOException;
+    LogRespDto analyzeVideo(MultipartFile video) throws IOException;
     String uploadShortsVideo(String originalFilename, MultipartFile file, VideoUploadReqDto videoUploadReqDto) throws IOException;
     InputStream downloadVideo(String fileName) throws IOException;
     String uploadVideoBytes(String fileName, byte[] data, String contentType) throws IOException;
