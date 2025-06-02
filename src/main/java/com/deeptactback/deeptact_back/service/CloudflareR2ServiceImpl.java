@@ -133,7 +133,7 @@ public class CloudflareR2ServiceImpl implements CloudflareR2Service {
         MultiValueMap<String, Object> bodyAtt = new LinkedMultiValueMap<>();
         bodyAtt.add("video", new MultipartInputStreamFileResource(new ByteArrayInputStream(videoBytes), video.getOriginalFilename()));
         HttpEntity<MultiValueMap<String, Object>> requestAtt = new HttpEntity<>(bodyAtt, headers);
-        ResponseEntity<Map> responseAtt = restTemplate.postForEntity("http://localhost:8000/predict-att", requestAtt, Map.class);
+        ResponseEntity<Map> responseAtt = restTemplate.postForEntity("http://localhost:5000/predict-att", requestAtt, Map.class);
         Map<String, Object> resultAtt = responseAtt.getBody();
 
         // ✅ 결과 파싱 (null 방지)
