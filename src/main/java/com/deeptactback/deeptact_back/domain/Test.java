@@ -33,11 +33,29 @@ public class Test {
     @Column(nullable = false)
     private String title;
 
-    @Column(nullable = false)
-    private Boolean isDeepfake;
+    @Column(nullable = true)
+    private Boolean attention;
 
     @Column(nullable = false)
-    private float detectionScore;
+    private Boolean attention_pred;
+
+    @Column(nullable = false)
+    private float attention_og_prob;
+
+    @Column(nullable = false)
+    private float attention_df_prob;
+
+    @Column(nullable = true)
+    private Boolean convolution;
+
+    @Column(nullable = false)
+    private Boolean convolution_pred;
+
+    @Column(nullable = false)
+    private float convolution_og_prob;
+
+    @Column(nullable = false)
+    private float convolution_df_prob;
 
     @Column(nullable = false, length = 255)
     private String videoUrl;
@@ -49,11 +67,31 @@ public class Test {
     private LocalDateTime uploadedAt;
 
     @Builder
-    public Test(User user, String title, Boolean isDeepfake, float detectionScore, String videoUrl, String thumbnailUrl, LocalDateTime uploadedAt) {
+    public Test(
+        User user,
+        String title,
+        Boolean attention,
+        Boolean attention_pred,
+        float attention_og_prob,
+        float attention_df_prob,
+        Boolean convolution,
+        Boolean convolution_pred,
+        float convolution_og_prob,
+        float convolution_df_prob,
+        String videoUrl,
+        String thumbnailUrl,
+        LocalDateTime uploadedAt
+    ) {
         this.user = user;
         this.title = title;
-        this.isDeepfake = isDeepfake;
-        this.detectionScore = detectionScore;
+        this.attention = attention;
+        this.attention_pred = attention_pred;
+        this.attention_og_prob = attention_og_prob;
+        this.attention_df_prob = attention_df_prob;
+        this.convolution = convolution;
+        this.convolution_pred = convolution_pred;   
+        this.convolution_og_prob = convolution_og_prob;
+        this.convolution_df_prob = convolution_df_prob;
         this.videoUrl = videoUrl;
         this.thumbnailUrl = thumbnailUrl;
         this.uploadedAt = uploadedAt != null ? uploadedAt : LocalDateTime.now();

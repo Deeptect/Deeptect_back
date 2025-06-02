@@ -6,25 +6,25 @@ import lombok.Data;
 
 @Data
 public class LogRespVo {
-    private Boolean isDeepfakeDirect;
-    private Float scoreDirect;
-    private Boolean isDeepfakeAttention;
-    private Float scoreAttention;
+    private String model;
+    private Boolean prediction;
+    private Float original_prob;
+    private Float deepfake_prob;
 
     @Builder
-    public LogRespVo(Boolean isDeepfakeDirect, Float scoreDirect, Boolean isDeepfakeAttention, Float scoreAttention) {
-        this.isDeepfakeDirect = isDeepfakeDirect;
-        this.scoreDirect = scoreDirect;
-        this.isDeepfakeAttention = isDeepfakeAttention;
-        this.scoreAttention = scoreAttention;
+    public LogRespVo(String model, Boolean prediction, Float original_prob,  Float deepfake_prob) {
+        this.model = model;
+        this.prediction = prediction;
+        this.original_prob = original_prob;
+        this.deepfake_prob = deepfake_prob;
     }
 
     public static LogRespVo dtoToVo(LogRespDto logRespDto) {
         return LogRespVo.builder()
-            .isDeepfakeDirect(logRespDto.getIsDeepfakeDirect())
-            .scoreDirect(logRespDto.getScoreDirect())
-            .isDeepfakeAttention(logRespDto.getIsDeepfakeAttention())
-            .scoreAttention(logRespDto.getScoreAttention())
+            .model(logRespDto.getModel())
+            .prediction(logRespDto.getPrediction())
+            .original_prob(logRespDto.getOriginalProb())
+            .deepfake_prob(logRespDto.getDeepfakeProb())
             .build();
     }
 }

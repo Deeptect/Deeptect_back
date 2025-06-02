@@ -151,7 +151,34 @@ public class CloudflareR2ServiceImpl implements CloudflareR2Service {
     }
 }
 
-    public LogRespDto analyzeVideo(MultipartFile video) throws IOException {
+    public LogRespDto analyzeVideoAttention(MultipartFile video) throws IOException {
+
+        byte[] videoBytes = video.getBytes();
+
+        // ✅ Deep 모델 분석 요청
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.MULTIPART_FORM_DATA);
+
+        MultiValueMap<String, Object> bodyDirect = new LinkedMultiValueMap<>();
+        bodyDirect.add("video", new MultipartInputStreamFileResource(new ByteArrayInputStream(videoBytes), video.getOriginalFilename()));
+        HttpEntity<MultiValueMap<String, Object>> requestDirect = new HttpEntity<>(bodyDirect, headers);
+
+        // ✅ Attention 모델 분석 요청
+        MultiValueMap<String, Object> bodyAtt = new LinkedMultiValueMap<>();
+        bodyAtt.add("video", new MultipartInputStreamFileResource(new ByteArrayInputStream(videoBytes), video.getOriginalFilename()));
+        HttpEntity<MultiValueMap<String, Object>> requestAtt = new HttpEntity<>(bodyAtt, headers);
+        ResponseEntity<Map> response = restTemplate.postForEntity("http://localhost:5000/predict-att", requestAtt, Map.class);
+        Map<String, Object> result = response.getBody();
+
+        String model = (String) result.get("model");
+        boolean prediction = ((Number) result.get("prediction")).intValue() == 1;
+        float originalProb = ((Number) result.get("original_prob")).floatValue();
+        float deepfakeProb = ((Number) result.get("deepfake_prob")).floatValue();
+
+       return LogRespDto.entityToDto(model, prediction, originalProb, deepfakeProb);
+    }
+
+    public LogRespDto analyzeVideoConvolution(MultipartFile video) throws IOException {
 
         byte[] videoBytes = video.getBytes();
 
@@ -164,36 +191,15 @@ public class CloudflareR2ServiceImpl implements CloudflareR2Service {
         HttpEntity<MultiValueMap<String, Object>> requestDirect = new HttpEntity<>(bodyDirect, headers);
 
         RestTemplate restTemplate = new RestTemplate();
-        ResponseEntity<Map> responseDirect = restTemplate.postForEntity("http://localhost:5000/predict-deep", requestDirect, Map.class);
-        Map<String, Object> resultDirect = responseDirect.getBody();
+        ResponseEntity<Map> response = restTemplate.postForEntity("http://localhost:5000/predict-deep", requestDirect, Map.class);
+        Map<String, Object> result = response.getBody();
 
-        // ✅ Attention 모델 분석 요청
-        MultiValueMap<String, Object> bodyAtt = new LinkedMultiValueMap<>();
-        bodyAtt.add("video", new MultipartInputStreamFileResource(new ByteArrayInputStream(videoBytes), video.getOriginalFilename()));
-        HttpEntity<MultiValueMap<String, Object>> requestAtt = new HttpEntity<>(bodyAtt, headers);
-        ResponseEntity<Map> responseAtt = restTemplate.postForEntity("http://localhost:5000/predict-att", requestAtt, Map.class);
-        Map<String, Object> resultAtt = responseAtt.getBody();
+        String model = (String) result.get("model");
+        boolean prediction = ((Number) result.get("prediction")).intValue() == 1;
+        float originalProb = ((Number) result.get("original_prob")).floatValue();
+        float deepfakeProb = ((Number) result.get("deepfake_prob")).floatValue();
 
-        // ✅ 결과 파싱 (null 방지)
-        boolean isDeepfakeDirect = resultDirect != null && resultDirect.get("prediction") != null && ((Integer) resultDirect.get("prediction")) == 1;
-        float scoreDirect = resultDirect != null && resultDirect.get("probability") != null ? ((Number) resultDirect.get("probability")).floatValue() : -1f;
-
-        boolean isDeepfakeAttention = resultAtt != null && resultAtt.get("prediction") != null && ((Integer) resultAtt.get("prediction")) == 1;
-        float scoreAttention = resultAtt != null && resultAtt.get("deepfake_prob") != null ? ((Number) resultAtt.get("deepfake_prob")).floatValue() : -1f;
-
-        // ✅ 로그 저장
-        // DeepfakeAnalysisLog log = DeepfakeAnalysisLog.builder()
-        //     .user(user)
-        //     .title(title)
-        //     .isDeepfake(isDeepfakeDirect || isDeepfakeAttention)
-        //     .detectionScore(Math.max(scoreDirect, scoreAttention) * 100)
-        //     .analysisDetail("분석 완료")
-        //     .videoUrl(videoUrl)
-        //     .thumbnailUrl("")
-        //     .build();
-
-        // logRepository.save(log);
-        return LogRespDto.entityToDto(isDeepfakeDirect, scoreDirect, isDeepfakeAttention, scoreAttention);
+        return LogRespDto.entityToDto(model, prediction, originalProb, deepfakeProb);
     }
 
 

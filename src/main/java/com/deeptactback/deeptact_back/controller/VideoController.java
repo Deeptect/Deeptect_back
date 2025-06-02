@@ -50,11 +50,25 @@ public class VideoController {
         }
     }
 
-    @PostMapping(path = "/analysis", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @PostMapping(path = "/analysis/attention", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public CMResponse<LogRespVo> analysisVideo(
         @RequestPart("video") MultipartFile video) {
         try {
-            LogRespDto logRespDto = cloudflareR2Service.analyzeVideo(video);
+            LogRespDto logRespDto = cloudflareR2Service.analyzeVideoAttention(video);
+            LogRespVo logRespVo = LogRespVo.dtoToVo(logRespDto);
+            return CMResponse.success(BaseResponseStatus.SUCCESS, logRespVo);
+        } catch (BaseException e) {
+            return CMResponse.fail(e.getErrorCode());
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    @PostMapping(path = "/analysis/convolution", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public CMResponse<LogRespVo> analysisVideo(
+        @RequestPart("video") MultipartFile video) {
+        try {
+            LogRespDto logRespDto = cloudflareR2Service.analyzeVideoConvolution(video);
             LogRespVo logRespVo = LogRespVo.dtoToVo(logRespDto);
             return CMResponse.success(BaseResponseStatus.SUCCESS, logRespVo);
         } catch (BaseException e) {

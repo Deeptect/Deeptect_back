@@ -6,17 +6,17 @@ import lombok.Data;
 @Data
 @Builder
 public class LogRespDto {
-    private Boolean isDeepfakeDirect;
-    private Float scoreDirect;
-    private Boolean isDeepfakeAttention;
-    private Float scoreAttention;
+    private String model;
+    private Boolean prediction;
+    private Float original_prob;
+    private Float deepfake_prob;
 
-    public static LogRespDto entityToDto(Boolean isDeepfakeDirect, Float scoreDirect, Boolean isDeepfakeAttention, Float scoreAttention) {
+    public static LogRespDto entityToDto(String model, Boolean prediction, Float original_prob, Float deepfake_prob) {
         return LogRespDto.builder()
-            .isDeepfakeDirect(isDeepfakeDirect)
-            .scoreDirect(scoreDirect)
-            .isDeepfakeAttention(isDeepfakeAttention)
-            .scoreAttention(scoreAttention)
+            .model(model)
+            .prediction(prediction)
+            .original_prob(original_prob)
+            .deepfake_prob(deepfake_prob)
             .build();
     }
 }
