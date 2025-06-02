@@ -52,10 +52,9 @@ public class VideoController {
 
     @PostMapping(path = "/analysis", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public CMResponse<LogRespVo> analysisVideo(
-        @RequestPart("video") MultipartFile video,
-        @RequestPart("title") String title) {
+        @RequestPart("video") MultipartFile video) {
         try {
-            LogRespDto logRespDto = cloudflareR2Service.analyzeVideo(video, title);
+            LogRespDto logRespDto = cloudflareR2Service.analyzeVideo(video);
             LogRespVo logRespVo = LogRespVo.dtoToVo(logRespDto);
             return CMResponse.success(BaseResponseStatus.SUCCESS, logRespVo);
         } catch (BaseException e) {

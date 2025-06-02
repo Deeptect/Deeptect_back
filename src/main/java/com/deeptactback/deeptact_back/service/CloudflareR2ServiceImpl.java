@@ -2,14 +2,17 @@ package com.deeptactback.deeptact_back.service;
 
 import com.deeptactback.deeptact_back.common.OriginType;
 import com.deeptactback.deeptact_back.domain.DeepfakeAnalysisLog;
+import com.deeptactback.deeptact_back.domain.Test;
 import com.deeptactback.deeptact_back.domain.User;
 import com.deeptactback.deeptact_back.domain.Video;
 import com.deeptactback.deeptact_back.dto.LogRespDto;
 import com.deeptactback.deeptact_back.dto.VideoUploadReqDto;
 import com.deeptactback.deeptact_back.repository.LogRepository;
+import com.deeptactback.deeptact_back.repository.TestRepository;
 import com.deeptactback.deeptact_back.repository.UserRepository;
 import com.deeptactback.deeptact_back.repository.VideoRepository;
 import com.deeptactback.deeptact_back.vo.LogListRespVo;
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
@@ -55,16 +58,18 @@ public class CloudflareR2ServiceImpl implements CloudflareR2Service {
     private final VideoRepository videoRepository;
     private final UserRepository userRepository;
     private final LogRepository logRepository;
+    private final TestRepository testRepository;
 
     public CloudflareR2ServiceImpl(
         @Value("${cloudflare.r2.access-key-id}") String accessKeyId,
         @Value("${cloudflare.r2.secret-access-key}") String secretAccessKey,
         @Value("${cloudflare.r2.endpoint}") String endpoint,
         @Value("${cloudflare.r2.bucket-name}") String bucketName, VideoRepository videoRepository,
-        UserRepository userRepository, LogRepository logRepository) {
+        UserRepository userRepository, LogRepository logRepository, TestRepository testRepository) {
         this.videoRepository = videoRepository;
         this.userRepository = userRepository;
         this.logRepository = logRepository;
+        this.testRepository = testRepository;
 
         this.r2Client = S3Client.builder()
             .region(Region.US_EAST_1)
@@ -147,6 +152,8 @@ public class CloudflareR2ServiceImpl implements CloudflareR2Service {
 }
 
     public LogRespDto analyzeVideo(MultipartFile video) throws IOException {
+
+        byte[] videoBytes = video.getBytes();
 
         // ✅ Deep 모델 분석 요청
         HttpHeaders headers = new HttpHeaders();
