@@ -12,12 +12,12 @@ import com.deeptactback.deeptact_back.repository.TestRepository;
 import com.deeptactback.deeptact_back.repository.UserRepository;
 import com.deeptactback.deeptact_back.repository.VideoRepository;
 import com.deeptactback.deeptact_back.vo.LogListRespVo;
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.net.URI;
-import java.net.URLEncoder;
-import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.io.ByteArrayInputStream;
@@ -38,6 +38,7 @@ import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.transaction.annotation.Transactional;
 
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
@@ -50,8 +51,10 @@ import software.amazon.awssdk.services.s3.model.S3Exception;
 
 @Service
 @Slf4j
+@Transactional(readOnly = true)
 public class CloudflareR2ServiceImpl implements CloudflareR2Service {
 
+    private final RestTemplate restTemplate;
     @Value("${cloudflare.r2.public-url}") String publicUrl;
     private final S3Client r2Client;
     private final String bucketName;
@@ -65,7 +68,8 @@ public class CloudflareR2ServiceImpl implements CloudflareR2Service {
         @Value("${cloudflare.r2.secret-access-key}") String secretAccessKey,
         @Value("${cloudflare.r2.endpoint}") String endpoint,
         @Value("${cloudflare.r2.bucket-name}") String bucketName, VideoRepository videoRepository,
-        UserRepository userRepository, LogRepository logRepository, TestRepository testRepository) {
+        UserRepository userRepository, LogRepository logRepository, TestRepository testRepository,
+        RestTemplate restTemplate) {
         this.videoRepository = videoRepository;
         this.userRepository = userRepository;
         this.logRepository = logRepository;
@@ -79,25 +83,47 @@ public class CloudflareR2ServiceImpl implements CloudflareR2Service {
             .build();
 
         this.bucketName = bucketName;
+        this.restTemplate = restTemplate;
     }
 
     @Override
-    public void uploadVideo(MultipartFile video, String title, String description, Boolean isDeepfake, Float detectionScore) throws IOException {
-    try {
+    @Transactional
+    public void uploadVideo(MultipartFile video,
+                            String title,
+                            String category,
+                            Boolean attention,
+                            Boolean attentionPred,
+                            Float attentionOGProb,
+                            Float attentionDFProb,
+                            Boolean convolution,
+                            Boolean convolutionPred,
+                            Float convolutionOGProb,
+                            Float convolutionDFProb) throws IOException {
+
+        try {
+        // 🔹 유저 인증 및 확인
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         String uuid = (String) auth.getPrincipal();
-        User user = userRepository.findByUuid(uuid);
+        System.out.println("✅ 유저 UUID: " + uuid);
 
-        // 🔸 timestamp + 안전한 파일명 생성
+        User user = userRepository.findByUuid("c949deb8-ae9c-410b-9c1a-5da52cf21244");
+        if (user == null) throw new RuntimeException("❌ 유저 정보 없음 (DB에서 찾을 수 없음)");
+
+        // 🔹 파일 확인
+        System.out.println("✅ 업로드된 파일 이름: " + video.getOriginalFilename());
+        System.out.println("✅ 파일 크기: " + video.getSize());
+        if (video.isEmpty()) throw new RuntimeException("❌ 영상 파일이 비어 있습니다.");
+
+        // 🔹 업로드 경로 준비
         String timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss"));
         String baseName = title + "_" + timestamp;
         String videoKey = "video/" + uuid + "/" + baseName + ".mp4";
         String thumbnailKey = "video/" + uuid + "/" + baseName + "_thumb.jpg";
+        String videoUrl = publicUrl + "/" + videoKey;
+        String thumbnailUrl = publicUrl + "/" + thumbnailKey;
 
-        String videoUrl = publicUrl + videoKey;
-        String thumbnailUrl = publicUrl + thumbnailKey;
-
-        // ✅ Cloudflare R2 - 영상 업로드
+        // 🔹 Cloudflare R2 영상 업로드
+        System.out.println("✅ R2 영상 경로: " + videoKey);
         PutObjectRequest videoPutRequest = PutObjectRequest.builder()
             .bucket(bucketName)
             .key(videoKey)
@@ -106,56 +132,92 @@ public class CloudflareR2ServiceImpl implements CloudflareR2Service {
             .build();
 
         r2Client.putObject(videoPutRequest, RequestBody.fromInputStream(video.getInputStream(), video.getSize()));
+        System.out.println("✅ R2 영상 업로드 완료");
 
-        // ✅ 썸네일 생성: 임시 파일 저장 → ffmpeg 실행
+        // 🔹 썸네일 생성
         File tempVideo = File.createTempFile("upload_", ".mp4");
         video.transferTo(tempVideo);
-
         File thumbnailFile = new File(tempVideo.getParent(), baseName + "_thumb.jpg");
 
         ProcessBuilder pb = new ProcessBuilder(
             "ffmpeg", "-i", tempVideo.getAbsolutePath(), "-ss", "00:00:05", "-vframes", "1", thumbnailFile.getAbsolutePath()
         );
-
         pb.redirectErrorStream(true);
         Process process = pb.start();
-        process.waitFor();
 
-        // ✅ 썸네일 업로드
+        int exitCode = process.waitFor();
+        if (exitCode != 0) {
+            try (BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()))) {
+                String line;
+                while ((line = reader.readLine()) != null) {
+                    System.out.println("❌ ffmpeg 오류 출력: " + line);
+                }
+            }
+            throw new RuntimeException("❌ 썸네일 생성 실패 (exitCode: " + exitCode + ")");
+        }
+        System.out.println("✅ 썸네일 생성 완료: " + thumbnailFile.getAbsolutePath());
+
+        // 🔹 썸네일 R2 업로드
         PutObjectRequest thumbPutRequest = PutObjectRequest.builder()
             .bucket(bucketName)
             .key(thumbnailKey)
             .contentType("image/jpeg")
             .contentLength(thumbnailFile.length())
             .build();
-
         r2Client.putObject(thumbPutRequest, RequestBody.fromFile(thumbnailFile));
+        System.out.println("✅ 썸네일 업로드 완료");
+
+        System.out.println("✅ DB 저장 필드 확인:");
+        System.out.println("attention: " + attention);
+        System.out.println("attention_pred: " + attentionPred);
+        System.out.println("attentionOGProb: " + attentionOGProb);
+        System.out.println("attentionDFProb: " + attentionDFProb);
+        System.out.println("convolution: " + convolution);
+        System.out.println("convolution_pred: " + convolutionPred);
+        System.out.println("convolutionOGProb: " + convolutionOGProb);
+        System.out.println("convolutionDFProb: " + convolutionDFProb);
+
+        System.out.println("thumbnailUrl: " + thumbnailUrl);
 
         Test testVideo = Test.builder()
             .user(user)
             .title(title)
-            .isDeepfake(isDeepfake)
-            .detectionScore(detectionScore)
+            .view(0L)
+            .category(category)
+            // .description(description)
+            .attention(attention)
+            .attention_pred(attentionPred)
+            .attention_og_prob(attentionOGProb)
+            .attention_df_prob(attentionDFProb)
+            .convolution(convolution)
+            .convolution_pred(convolutionPred)
+            .convolution_og_prob(convolutionOGProb)
+            .convolution_df_prob(convolutionDFProb)
             .videoUrl(videoUrl)
             .thumbnailUrl(thumbnailUrl)
             .uploadedAt(LocalDateTime.now())
             .build();
 
         testRepository.save(testVideo);
+        System.out.println("✅ DB 저장 성공");
+        testRepository.flush(); // DB 트랜잭션 로그 확인용
 
+        // 🔹 임시 파일 삭제
         tempVideo.delete();
         thumbnailFile.delete();
+        System.out.println("✅ 임시 파일 삭제 완료");
 
     } catch (S3Exception | InterruptedException e) {
+        System.out.println("❌ 예외 발생: " + e.getMessage());
         throw new IOException("Cloudflare R2 업로드 또는 썸네일 생성 실패: " + e.getMessage(), e);
     }
 }
+
 
     public LogRespDto analyzeVideoAttention(MultipartFile video) throws IOException {
 
         byte[] videoBytes = video.getBytes();
 
-        // ✅ Deep 모델 분석 요청
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.MULTIPART_FORM_DATA);
 
@@ -163,7 +225,6 @@ public class CloudflareR2ServiceImpl implements CloudflareR2Service {
         bodyDirect.add("video", new MultipartInputStreamFileResource(new ByteArrayInputStream(videoBytes), video.getOriginalFilename()));
         HttpEntity<MultiValueMap<String, Object>> requestDirect = new HttpEntity<>(bodyDirect, headers);
 
-        // ✅ Attention 모델 분석 요청
         MultiValueMap<String, Object> bodyAtt = new LinkedMultiValueMap<>();
         bodyAtt.add("video", new MultipartInputStreamFileResource(new ByteArrayInputStream(videoBytes), video.getOriginalFilename()));
         HttpEntity<MultiValueMap<String, Object>> requestAtt = new HttpEntity<>(bodyAtt, headers);
@@ -182,7 +243,6 @@ public class CloudflareR2ServiceImpl implements CloudflareR2Service {
 
         byte[] videoBytes = video.getBytes();
 
-        // ✅ Deep 모델 분석 요청
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.MULTIPART_FORM_DATA);
 

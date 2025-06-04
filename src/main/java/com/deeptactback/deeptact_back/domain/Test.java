@@ -33,7 +33,12 @@ public class Test {
     @Column(nullable = false)
     private String title;
 
-    @Column(nullable = true)
+    @Column(nullable = false)
+    private Long view;
+
+    @Column(nullable = false)
+    private String category;
+
     private Boolean attention;
 
     @Column(nullable = false)
@@ -45,7 +50,6 @@ public class Test {
     @Column(nullable = false)
     private float attention_df_prob;
 
-    @Column(nullable = true)
     private Boolean convolution;
 
     @Column(nullable = false)
@@ -57,10 +61,10 @@ public class Test {
     @Column(nullable = false)
     private float convolution_df_prob;
 
-    @Column(nullable = false, length = 255)
+    @Column(nullable = false)
     private String videoUrl;
 
-    @Column(nullable = false, length = 255)
+    @Column(nullable = false)
     private String thumbnailUrl;
 
     @Column(nullable = false)
@@ -70,6 +74,8 @@ public class Test {
     public Test(
         User user,
         String title,
+        Long view,
+        String category,
         Boolean attention,
         Boolean attention_pred,
         float attention_og_prob,
@@ -84,6 +90,8 @@ public class Test {
     ) {
         this.user = user;
         this.title = title;
+        this.view = view;
+        this.category = category;
         this.attention = attention;
         this.attention_pred = attention_pred;
         this.attention_og_prob = attention_og_prob;

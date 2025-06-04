@@ -23,8 +23,8 @@ public class LogRespVo {
         return LogRespVo.builder()
             .model(logRespDto.getModel())
             .prediction(logRespDto.getPrediction())
-            .original_prob(logRespDto.getOriginalProb())
-            .deepfake_prob(logRespDto.getDeepfakeProb())
+            .original_prob(logRespDto.getOriginal_prob())
+            .deepfake_prob(logRespDto.getDeepfake_prob())
             .build();
     }
 }

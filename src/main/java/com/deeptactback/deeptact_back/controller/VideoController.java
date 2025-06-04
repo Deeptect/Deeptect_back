@@ -51,7 +51,7 @@ public class VideoController {
     }
 
     @PostMapping(path = "/analysis/attention", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public CMResponse<LogRespVo> analysisVideo(
+    public CMResponse<LogRespVo> analysisVideoAtt(
         @RequestPart("video") MultipartFile video) {
         try {
             LogRespDto logRespDto = cloudflareR2Service.analyzeVideoAttention(video);
@@ -65,7 +65,7 @@ public class VideoController {
     }
 
     @PostMapping(path = "/analysis/convolution", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public CMResponse<LogRespVo> analysisVideo(
+    public CMResponse<LogRespVo> analysisVideoConv(
         @RequestPart("video") MultipartFile video) {
         try {
             LogRespDto logRespDto = cloudflareR2Service.analyzeVideoConvolution(video);
@@ -79,23 +79,34 @@ public class VideoController {
     }
 
     // 업로드
-    @PostMapping(path = "/upload", consumes = {MediaType.MULTIPART_FORM_DATA_VALUE})
+    @PostMapping(path = "/upload", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public CMResponse<Void> uploadFile(
-        @RequestPart("video") MultipartFile video,
-        @RequestPart("title") String title,
-        @RequestPart("description") String description,
-        @RequestPart("isDeepfake") Boolean isDeepfake,  
-        @RequestPart("detectionScore") Float detectionScore){
+        @RequestParam("video") MultipartFile video,
+        @RequestParam("title") String title,
+        @RequestParam("category") String category,
+        @RequestParam("attention") Boolean attention,
+        @RequestParam("attention_pred") Boolean attentionPred,
+        @RequestParam("attention_og_prob") Float attentionOGProb,
+        @RequestParam("attention_df_prob") Float attentionDFProb,
+        @RequestParam("convolution") Boolean convolution,
+        @RequestParam("convolution_pred") Boolean convolutionPred,
+        @RequestParam("convolution_og_prob") Float convolutionOGProb,
+        @RequestParam("convolution_df_prob") Float convolutionDFProb
+    ) {
         try {
-            cloudflareR2Service.uploadVideo(video, title, description, isDeepfake, detectionScore);
+            cloudflareR2Service.uploadVideo(
+                video, title, category,
+                attention, attentionPred, attentionOGProb, attentionDFProb,
+                convolution, convolutionPred, convolutionOGProb, convolutionDFProb
+            );
             return CMResponse.success(BaseResponseStatus.SUCCESS);
         } catch (BaseException e) {
             return CMResponse.fail(e.getErrorCode());
-        }
-        catch (IOException e) {
+        } catch (IOException e) {
             return CMResponse.fail(BaseResponseStatus.INTERNAL_SERVER_ERROR);
         }
     }
+
 
     @GetMapping("/download/{fileName}")
     public ResponseEntity<Resource> downloadFile(@PathVariable String fileName) throws IOException {
