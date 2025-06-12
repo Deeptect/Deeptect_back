@@ -26,12 +26,13 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.web.multipart.MultipartFile;
 
 @Slf4j
 @RequiredArgsConstructor
 @RestController
-@RequestMapping("/api/v1/video")
+@RequestMapping("/v1/video")
 public class VideoController {
 
     private final CloudflareR2Service cloudflareR2Service;
@@ -41,8 +42,10 @@ public class VideoController {
     @GetMapping("/videos")
     public CMResponse<Page<VideoListRespDto>> getVideos(
         @RequestParam(defaultValue = "0") int page,
-        @RequestParam(defaultValue = "10") int size) {
+        @RequestParam(defaultValue = "10") int size, HttpServletRequest request) {
         try {
+            System.out.println(">>> 컨트롤러 도달: " + request.getRequestURI());
+            System.out.println(">>> 파라미터 - page: " + page + ", size: " + size);
             Pageable pageable = PageRequest.of(page, size, Sort.by("uploadedAt").descending());
             return CMResponse.success(BaseResponseStatus.SUCCESS, videoService.getAllVideos(pageable));
         } catch (BaseException e) {

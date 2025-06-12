@@ -55,15 +55,18 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         }
 
     }
-
+    
     private boolean shouldSkipFilter(HttpServletRequest request) {
         String path = request.getRequestURI();
-        return path.startsWith("/api/v1/oauth/") ||
-            path.startsWith("/api/v1/email/") ||
-            path.equals("/api/v1/user/login") ||
-            path.equals("/api/v1/user/register") ||
-            path.equals("/api/v1/video/fetch-shorts") ||
-            path.equals("/api/v1/video/videos");
+        boolean skip = path.startsWith("/api/v1/oauth/")
+            || path.startsWith("/v1/email/")
+            || path.equals("/v1/user/login")
+            || path.equals("/v1/user/register")
+            || path.equals("/v1/video/fetch-shorts")
+            || path.startsWith("/v1/video/videos");
+        System.out.println(">>> shouldSkipFilter - path: " + path + ", skip: " + skip);
+        return skip;
     }
+
 
 }

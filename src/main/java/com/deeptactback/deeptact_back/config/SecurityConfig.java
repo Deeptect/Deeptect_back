@@ -43,12 +43,13 @@ public class SecurityConfig {
             .csrf(AbstractHttpConfigurer::disable)
             .authorizeHttpRequests(authz -> authz
                 .requestMatchers(
-                    "/api/v1/email/*",
-                    "/api/v1/oauth/*",
-                    "/api/v1/user/register",
-                    "/api/v1/user/login",
-                    "/api/v1/video/fetch-shorts",
-                    "/api/v1/video/videos"
+                    "/v1/email/**",
+                    "/v1/oauth/**",
+                    "/v1/user/register",
+                    "/v1/user/login",
+                    "/v1/video/fetch-shorts",
+                    "/v1/video/videos",
+                    "/v1/video/videos/**"
                 )
                 .permitAll()
                 .anyRequest().authenticated())
@@ -63,6 +64,7 @@ public class SecurityConfig {
         CorsConfiguration configuration = new CorsConfiguration();
         configuration.addAllowedOrigin("http://localhost:8000");
         configuration.addAllowedOrigin("http://127.0.0.1:8000");
+        configuration.addAllowedOrigin("https://zdznessqpctcnxhj.tunnel.elice.io");
         configuration.addAllowedMethod("*");
         configuration.addAllowedHeader("*");
         configuration.setExposedHeaders(List.of("Authorization"));
